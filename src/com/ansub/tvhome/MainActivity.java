@@ -1,4 +1,4 @@
-﻿package com.ansub.tvhome;
+package com.ansub.tvhome;
 
 import android.app.Activity;
 import android.app.Dialog;
