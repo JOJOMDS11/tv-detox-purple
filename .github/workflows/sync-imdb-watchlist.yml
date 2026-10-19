@@ -56,14 +56,12 @@ jobs:
           }
           """
 
-          VARIANTS = [
-              "titleType { id } ratingsSummary { aggregateRating } genres { genres { text } }",
-              "titleType { id } ratingsSummary { aggregateRating } titleGenres { genres { genre { text } } }",
-              "titleType { id } genres { genres { text } }",
-              "titleType { id } titleGenres { genres { genre { text } } }",
-              "titleType { id } ratingsSummary { aggregateRating }",
-              "titleType { id }",
-              "",
+          # Campos opcionais: cada um é testado sozinho; os que o IMDb recusar ficam de fora.
+          OPTIONAL = [
+              ["titleType { id }"],
+              ["ratingsSummary { aggregateRating }"],
+              ["metacritic { metascore { score } }"],
+              ["genres { genres { text } }", "titleGenres { genres { genre { text } } }"],
           ]
 
 
@@ -114,12 +112,14 @@ jobs:
                       year = item.get("releaseYear") or {}
                       kind = item.get("titleType") or {}
                       rating = (item.get("ratingsSummary") or {}).get("aggregateRating") or 0
+                      metascore = ((item.get("metacritic") or {}).get("metascore") or {}).get("score") or 0
                       titles.append({
                           "id": imdb_id,
                           "title": title_text.get("text") or "",
                           "year": year.get("year"),
                           "type": kind.get("id") or "",
                           "rating": rating,
+                          "metascore": metascore,
                           "genres": extract_genres(item),
                           "poster": image.get("url") or "",
                           "imdbUrl": "https://www.imdb.com/title/" + imdb_id + "/",
@@ -141,23 +141,36 @@ jobs:
               )
               user_id = profile["userProfile"]["userId"]
 
+              chosen = []
+              for options in OPTIONAL:
+                  for frag in options:
+                      try:
+                          probe = TEMPLATE.replace("__EXTRA__", " ".join(chosen + [frag]))
+                          query(probe, {"userId": user_id, "first": 1, "after": None})
+                          chosen.append(frag)
+                          print("Campo ok: " + frag)
+                          break
+                      except Exception as error:
+                          print("Campo recusado: " + frag + " -> " + str(error)[:120])
+
               titles = None
               last_error = None
-              for extra in VARIANTS:
+              for extra in (" ".join(chosen), ""):
                   try:
                       titles = fetch_all(TEMPLATE.replace("__EXTRA__", extra), user_id)
                       print("Consulta usada: " + (extra or "básica"))
                       break
                   except Exception as error:
                       last_error = error
-                      print("Consulta falhou (" + (extra or "básica") + "): " + str(error))
+                      print("Consulta falhou: " + str(error)[:200])
 
               if not titles:
                   raise RuntimeError("A IMDb não retornou títulos: " + str(last_error))
 
               with_genres = sum(1 for t in titles if t["genres"])
               with_rating = sum(1 for t in titles if t["rating"])
-              print(f"{with_genres} de {len(titles)} títulos com gênero; {with_rating} com nota.")
+              with_meta = sum(1 for t in titles if t["metascore"])
+              print(f"{with_genres} de {len(titles)} títulos com gênero; {with_rating} com nota; {with_meta} com metascore.")
 
               output = {
                   "source": "IMDb Watchlist",
