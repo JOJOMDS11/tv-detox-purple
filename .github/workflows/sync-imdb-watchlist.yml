@@ -200,7 +200,7 @@ jobs:
           git fetch origin watchlist-data || true
 
           if git show-ref --verify --quiet refs/remotes/origin/watchlist-data; then
-            git checkout -B watchlist-data origin/watchlist-data
+            git checkout -f -B watchlist-data origin/watchlist-data
           else
             git checkout --orphan watchlist-data
             git rm -rf --cached . >/dev/null 2>&1 || true
