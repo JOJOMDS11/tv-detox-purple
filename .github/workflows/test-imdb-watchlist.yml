@@ -1,0 +1,66 @@
+name: Test IMDb Watchlist
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test public IMDb Watchlist API
+        run: |
+          python - <<'PY'
+          import json
+          import urllib.request
+
+          endpoint = "https://api.graphql.imdb.com/"
+          headers = {
+              "Content-Type": "application/json",
+              "Accept": "application/json",
+              "x-imdb-client-name": "imdb-web-next",
+          }
+
+          def query(q, variables):
+              body = json.dumps({
+                  "query": q,
+                  "variables": variables
+              }).encode()
+              req = urllib.request.Request(
+                  endpoint, data=body, headers=headers, method="POST"
+              )
+              with urllib.request.urlopen(req, timeout=30) as response:
+                  result = json.loads(response.read())
+              if result.get("errors"):
+                  raise RuntimeError(str(result["errors"][0]))
+              return result["data"]
+
+          profile = query(
+              "query($profileId: ID!) { userProfile(input: {profileId: $profileId}) { userId } }",
+              {"profileId": "p.kdmpbgbkxrrigqfvco4fujud3i"}
+          )
+          user_id = profile["userProfile"]["userId"]
+
+          result = query("""
+              query($userId: ID!, $first: Int!) {
+                predefinedList(classType: WATCH_LIST, userId: $userId) {
+                  titleListItemSearch(first: $first) {
+                    pageInfo { hasNextPage }
+                    edges { title { id titleText { text } } }
+                  }
+                }
+              }
+          """, {"userId": user_id, "first": 10})
+
+          watchlist = result["predefinedList"]
+          if watchlist is None:
+              raise RuntimeError("IMDb não retornou uma Watchlist pública.")
+
+          connection = watchlist["titleListItemSearch"]
+          print("API IMDb acessível pelo GitHub Actions.")
+          print("ID de usuário resolvido:", user_id)
+          print("Títulos retornados na primeira página:", len(connection["edges"]))
+          print("Existem mais títulos:", connection["pageInfo"]["hasNextPage"])
+          PY
