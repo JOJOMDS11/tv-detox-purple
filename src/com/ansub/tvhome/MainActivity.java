@@ -1,4 +1,4 @@
-package com.ansub.tvhome;
+﻿package com.ansub.tvhome;
 
 import android.app.Activity;
 import android.app.Dialog;
@@ -268,9 +268,9 @@ public class MainActivity extends Activity {
     // Static warm gradient, drawn once by the window: no extra view, no animation.
     private Drawable background() {
         GradientDrawable base = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
-                new int[] {0xFF15100F, 0xFF0A0809, 0xFF050405});
-        GradientDrawable warm = radial(0x36FF8048, 0.08f, -0.12f, px(1250));
-        GradientDrawable plum = radial(0x2EAA3C8C, 1.0f, 1.1f, px(1000));
+                new int[] {0xFF22103C, 0xFF12081F, 0xFF07030F});
+        GradientDrawable warm = radial(0x55B14CFF, 0.08f, -0.12f, px(1250));
+        GradientDrawable plum = radial(0x4DFF4FA8, 1.0f, 1.1f, px(1000));
         for (GradientDrawable g : new GradientDrawable[] {base, warm, plum}) g.setDither(true);
         return new LayerDrawable(new Drawable[] {base, warm, plum});
     }
@@ -310,7 +310,7 @@ public class MainActivity extends Activity {
         // the bottom row still fit on screen; past that the page scrolls.
         int launchable = 0;
         for (String pkg : apps) if (launchIntent(pm, pkg) != null) launchable++;
-        int rows = Math.max(1, (launchable + PER_ROW - 1) / PER_ROW);
+        int rows = Math.max(1, (launchable + 1 + PER_ROW - 1) / PER_ROW); // +1: the "+ App" tile sits after the last app
         gridTop = Math.max(px(GRID_MIN_TOP), px(ROW1_TOP) - (rows - 1) * px(ROW_STEP));
         int bottomTop = gridTop + rows * px(ROW_STEP);
         ((FrameLayout.LayoutParams) moveHint.getLayoutParams()).topMargin = gridTop - px(64);
@@ -333,19 +333,21 @@ public class MainActivity extends Activity {
             rowApps.add(pkg);
             addTile(root, pkg, label, banner, null, icon, gridX(i), gridY(i), w, h);
         }
+        // The "+ App" tile sits right after the last app, in the top grid.
+        int plusAt = rowApps.size();
+        addTile(root, ADD, Strings.t("Ver lista"), null, LineIcon.PLUS, null, gridX(plusAt), gridY(plusAt), w, h);
 
         // Bottom row: Play Store, HDMI inputs, Settings and Add app, six at most.
         int col = 0;
         boolean store = !apps.contains(PLAY_STORE) && launchIntent(pm, PLAY_STORE) != null;
         List<TvInputInfo> inputs = hdmiInputs();
-        int room = PER_ROW - 2 - (store ? 1 : 0);
+        int room = PER_ROW - 1 - (store ? 1 : 0);
         if (inputs.size() > room) inputs = inputs.subList(0, room);
         if (store)
             addTile(root, PLAY_STORE, "Play Store", null, LineIcon.PLAY, null, m + col++ * (w + g), bottomTop, w, h);
         for (TvInputInfo in : inputs)
             addTile(root, in.getId(), inputLabel(in), null, LineIcon.HDMI, null, m + col++ * (w + g), bottomTop, w, h);
-        addTile(root, SETTINGS, Strings.t("Settings"), null, LineIcon.SETTINGS, null, m + col++ * (w + g), bottomTop, w, h);
-        addTile(root, ADD, Strings.t("Add app"), null, LineIcon.PLUS, null, m + col * (w + g), bottomTop, w, h);
+        addTile(root, SETTINGS, Strings.t("Settings"), null, LineIcon.SETTINGS, null, m + col * (w + g), bottomTop, w, h);
 
         // Plain icons at the top right, level with the date: any settings shortcuts picked, then the
         // network icon. Added last, so the first app keeps first focus; Up from the apps reaches them.
@@ -374,14 +376,14 @@ public class MainActivity extends Activity {
         final GradientDrawable bg = new GradientDrawable();
         bg.setCornerRadius(px(RADIUS));
         if (banner != null) {
-            bg.setColor(0xFF1E1A1C);
+            bg.setColor(0xFF2A1647);
             ImageView iv = new ImageView(this);
             iv.setImageDrawable(fit(banner, w, h));
             card.addView(iv, new FrameLayout.LayoutParams(-1, -1));
         } else {
             // Quiet "glass" tile: icon above label.
-            bg.setColor(0x13FFFFFF);
-            bg.setStroke(Math.max(1, px(2)), 0x17FFFFFF);
+            bg.setColor(0x1AD9B3FF);
+            bg.setStroke(Math.max(1, px(2)), 0x30D9B3FF);
             LinearLayout inner = new LinearLayout(this);
             inner.setOrientation(LinearLayout.VERTICAL);
             inner.setGravity(Gravity.CENTER);
@@ -417,7 +419,7 @@ public class MainActivity extends Activity {
         final boolean glass = banner == null;
         card.setOnFocusChangeListener((v, has) -> {
             if (has) focusedKey = key;
-            if (glass) bg.setColor(has ? 0x38FFFFFF : 0x13FFFFFF);
+            if (glass) bg.setColor(has ? 0x55D9B3FF : 0x1AD9B3FF);
             v.animate().scaleX(has ? 1.1f : 1f).scaleY(has ? 1.1f : 1f).translationZ(has ? px(26) : 0)
                     .setDuration(140).withLayer().start();
             if (caption != null) caption.setVisibility(has ? View.VISIBLE : View.INVISIBLE);
@@ -713,7 +715,7 @@ public class MainActivity extends Activity {
 
         d.setContentView(box);
         Window w = d.getWindow();
-        w.setBackgroundDrawable(new ColorDrawable(0xF7161113));
+        w.setBackgroundDrawable(new ColorDrawable(0xF71A0D2E));
         w.setLayout(px(640), -1);
         w.setGravity(Gravity.END);
         w.setDimAmount(0.5f);
@@ -730,7 +732,7 @@ public class MainActivity extends Activity {
         box.setPadding(pad, pad, pad, pad);
         GradientDrawable bg = new GradientDrawable();
         bg.setCornerRadius(px(RADIUS));
-        bg.setColor(0xFF231D1F);
+        bg.setColor(0xFF2E1A4D);
         bg.setStroke(Math.max(1, px(2)), 0x17FFFFFF);
         box.setBackground(bg);
         float widest = 0; // some languages need more room than the tile is wide
@@ -826,11 +828,18 @@ public class MainActivity extends Activity {
             return;
         }
         final List<String> pkgs = new ArrayList<>(byLabel.values());
-        String title = replaceIndex < 0 ? Strings.t("Add an app")
+        String title = replaceIndex < 0 ? Strings.t("Ver lista")
                 : String.format(Strings.t("Replace %s"), labelOf(rowApps.get(replaceIndex)));
         panel(title, new ArrayList<>(byLabel.keySet()), pkgs, which -> {
-            if (replaceIndex < 0) rowApps.add(pkgs.get(which));
-            else rowApps.set(replaceIndex, pkgs.get(which));
+            if (replaceIndex < 0) {
+                Intent li = launchIntent(pm, pkgs.get(which));
+                if (li != null) {
+                    li.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    try { startActivity(li); } catch (Exception ignored) {}
+                }
+                return;
+            }
+            rowApps.set(replaceIndex, pkgs.get(which));
             saveRow();
             focusedKey = pkgs.get(which);
             buildTiles();
@@ -1002,3 +1011,4 @@ public class MainActivity extends Activity {
         return lp;
     }
 }
+

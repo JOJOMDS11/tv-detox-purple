@@ -9,9 +9,9 @@ import java.util.Map;
 // English. To add a language, add a table below in the same order as EN.
 final class Strings {
     private static final String[] EN = {
-        "Settings", "Add app", "Network", "Offline", "Sound", "Picture",
+        "Settings", "Ver lista", "Network", "Offline", "Sound", "Picture",
         "Move", "Replace", "Remove from home", "Uninstall", "App info",
-        "Use the arrows to move it, then press OK", "Every app is already here", "Add an app", "Replace %s",
+        "Use the arrows to move it, then press OK", "Every app is already here", "Ver lista", "Replace %s",
     };
 
     // Keyed by language ("de"), or language-country ("zh-TW") where a country writes it differently.
@@ -76,7 +76,7 @@ final class Strings {
             "Przesuń strzałkami, potem naciśnij OK", "Wszystkie aplikacje już tu są", "Dodaj aplikację", "Zamień %s",
         });
         LANGS.put("pt", new String[] { // Brazilian Portuguese
-            "Configurações", "Adicionar app", "Rede", "Sem conexão", "Som", "Imagem",
+            "Configurações", "Ver lista", "Rede", "Sem conexão", "Som", "Imagem",
             "Mover", "Substituir", "Remover do início", "Desinstalar", "Informações do app",
             "Use as setas para mover e depois aperte OK", "Todos os apps já estão aqui", "Adicionar um app", "Substituir %s",
         });
