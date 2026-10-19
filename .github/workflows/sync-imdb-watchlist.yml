@@ -57,8 +57,11 @@ jobs:
           """
 
           VARIANTS = [
+              "titleType { id } ratingsSummary { aggregateRating } genres { genres { text } }",
+              "titleType { id } ratingsSummary { aggregateRating } titleGenres { genres { genre { text } } }",
               "titleType { id } genres { genres { text } }",
               "titleType { id } titleGenres { genres { genre { text } } }",
+              "titleType { id } ratingsSummary { aggregateRating }",
               "titleType { id }",
               "",
           ]
@@ -110,11 +113,13 @@ jobs:
                       image = item.get("primaryImage") or {}
                       year = item.get("releaseYear") or {}
                       kind = item.get("titleType") or {}
+                      rating = (item.get("ratingsSummary") or {}).get("aggregateRating") or 0
                       titles.append({
                           "id": imdb_id,
                           "title": title_text.get("text") or "",
                           "year": year.get("year"),
                           "type": kind.get("id") or "",
+                          "rating": rating,
                           "genres": extract_genres(item),
                           "poster": image.get("url") or "",
                           "imdbUrl": "https://www.imdb.com/title/" + imdb_id + "/",
@@ -151,7 +156,8 @@ jobs:
                   raise RuntimeError("A IMDb não retornou títulos: " + str(last_error))
 
               with_genres = sum(1 for t in titles if t["genres"])
-              print(f"{with_genres} de {len(titles)} títulos com gênero.")
+              with_rating = sum(1 for t in titles if t["rating"])
+              print(f"{with_genres} de {len(titles)} títulos com gênero; {with_rating} com nota.")
 
               output = {
                   "source": "IMDb Watchlist",

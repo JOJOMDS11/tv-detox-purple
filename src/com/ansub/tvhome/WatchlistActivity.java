@@ -385,7 +385,9 @@ public class WatchlistActivity extends Activity {
 
     private void refreshIfStale() {
         File f = new File(getFilesDir(), CACHE_FILE);
-        if (f.exists() && !all.isEmpty() && System.currentTimeMillis() - f.lastModified() < MAX_AGE_MS) return;
+        // Cache antigo sem gênero/nota (JSON de antes da atualização) é refeito na hora, sem esperar os 30 min.
+        if (f.exists() && !all.isEmpty() && hasMeta()
+                && System.currentTimeMillis() - f.lastModified() < MAX_AGE_MS) return;
         pool.execute(() -> {
             try {
                 HttpURLConnection c = (HttpURLConnection) new URL(JSON_URL).openConnection();
@@ -409,6 +411,11 @@ public class WatchlistActivity extends Activity {
                 });
             }
         });
+    }
+
+    private boolean hasMeta() {
+        for (Item it : all) if (it.rating > 0 || !it.genres.isEmpty()) return true;
+        return false;
     }
 
     private static String readAll(InputStream in) throws Exception {
