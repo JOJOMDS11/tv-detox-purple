@@ -141,14 +141,30 @@ jobs:
           print(f"JSON criado com {len(titles)} títulos.")
           PY
 
+
       - name: Publish updated JSON
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          cp public/watchlist.json /tmp/watchlist.json
+
+          git fetch origin watchlist-data || true
+
+          if git show-ref --verify --quiet refs/remotes/origin/watchlist-data; then
+            git checkout -B watchlist-data origin/watchlist-data
+          else
+            git checkout --orphan watchlist-data
+            git rm -rf --cached . >/dev/null 2>&1 || true
+          fi
+
+          mkdir -p public
+          cp /tmp/watchlist.json public/watchlist.json
           git add public/watchlist.json
+
           if git diff --cached --quiet; then
             echo "Watchlist sem alterações; nada para publicar."
           else
             git commit -m "Update IMDb Watchlist JSON"
-            git push
+            git push -u origin watchlist-data
           fi
