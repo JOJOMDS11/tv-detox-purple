@@ -1,0 +1,1001 @@
+Windows PowerShell
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+PS C:\WINDOWS\System32> adb shell free -h
+\               total        used        free      shared     buffers
+Mem:             1.7G        1.6G         53M        7.6M         30M
+-/+ buffers/cache:           1.6G         84M
+Swap:            500M        313M        187M
+PS C:\WINDOWS\System32> adb shell cat /proc/meminfo
+MemTotal:        1830732 kB
+MemFree:           50468 kB
+MemAvailable:     673148 kB
+Buffers:           30948 kB
+Cached:           626788 kB
+SwapCached:         3168 kB
+Active:           619200 kB
+Inactive:         537028 kB
+Active(anon):     248240 kB
+Inactive(anon):   260244 kB
+Active(file):     370960 kB
+Inactive(file):   276784 kB
+Unevictable:        2800 kB
+Mlocked:            2800 kB
+HighTotal:       1405952 kB
+HighFree:          16744 kB
+LowTotal:         424780 kB
+LowFree:           33724 kB
+SwapTotal:        511996 kB
+SwapFree:         191228 kB
+Dirty:                96 kB
+Writeback:             0 kB
+AnonPages:        499364 kB
+Mapped:           318032 kB
+Shmem:              7828 kB
+KReclaimable:      27816 kB
+Slab:              80852 kB
+SReclaimable:      26916 kB
+SUnreclaim:        53936 kB
+KernelStack:       17072 kB
+PageTables:        41564 kB
+NFS_Unstable:          0 kB
+Bounce:                0 kB
+WritebackTmp:          0 kB
+CommitLimit:     1427360 kB
+Committed_AS:   31333660 kB
+VmallocTotal:     507904 kB
+VmallocUsed:       72216 kB
+VmallocChunk:          0 kB
+Percpu:             2608 kB
+CmaTotal:          77824 kB
+CmaFree:           23536 kB
+PS C:\WINDOWS\System32> adb shell dumpsys meminfo
+Applications Memory Usage (in Kilobytes):
+Uptime: 13236834 Realtime: 13236834
+
+
+Total RSS by process:
+    264,940K: com.global.unitviptv (pid 9517 / activities)
+    179,692K: com.google.android.gms (pid 1537)
+    163,556K: com.android.vending (pid 12388)
+    146,252K: system (pid 751)
+    130,856K: com.android.vending:background (pid 12501)
+    112,360K: com.spotify.tv.android (pid 2048)
+     90,708K: com.stremio.one (pid 9836)
+     76,704K: com.ansub.tvhome (pid 9273 / activities)
+     66,756K: com.google.android.inputmethod.latin (pid 1467)
+     65,980K: com.google.android.apps.mediashell (pid 2945)
+     62,716K: com.google.process.gservices (pid 12073)
+     62,668K: com.mediatek.wwtv.tvcenter (pid 1901)
+     62,156K: com.google.process.gapps (pid 12157)
+     61,624K: com.google.android.partnersetup (pid 12751)
+     61,344K: com.android.systemui (pid 1072)
+     61,152K: com.android.bluetooth (pid 1050)
+     60,460K: com.netflix.ninja (pid 2542)
+     60,260K: com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0 (pid 4328)
+     54,128K: com.google.android.tv.remote.service (pid 1499)
+     53,608K: com.android.providers.tv (pid 1876)
+     53,156K: com.google.android.ext.services (pid 1332)
+     52,700K: com.mediatek.tvinput (pid 1591)
+     51,280K: com.google.android.permissioncontroller (pid 2829)
+     51,120K: com.android.providers.media.module (pid 1645)
+     50,924K: com.mediatek.tv.service (pid 1169)
+     50,524K: zygote (pid 271)
+     50,284K: com.android.tv.settings (pid 1212)
+     48,304K: com.google.android.tts (pid 2124)
+     46,360K: com.ktc.serialport (pid 1739)
+     45,836K: com.android.keychain (pid 4608)
+     45,544K: ktc.factorymenu.ui (pid 1713)
+     44,892K: com.mediatek.autopair (pid 1687)
+     44,552K: com.ktc.tv.factory (pid 1660)
+     44,124K: com.mediatek.network (pid 1575)
+     42,336K: com.android.se (pid 1285)
+     42,248K: com.dolby.android.audio.service (pid 2101)
+     31,312K: webview_zygote (pid 1200)
+     18,220K: com.global.unitviptv (pid 9541)
+     14,304K: dtv_svc (pid 716)
+     11,088K: surfaceflinger (pid 359)
+      9,760K: media.codec (pid 464)
+      8,032K: android.hardware.graphics.composer@2.4-service (pid 337)
+      6,676K: mstar.hardware.mmdisp@1.0-service (pid 346)
+      6,312K: mstar.hardware.audio.service (pid 345)
+      6,084K: logd (pid 178)
+      6,076K: audioserver (pid 356)
+      6,024K: android.hardware.tv.input@1.0-service-mediatek (pid 343)
+      5,916K: mediatek.hardware.power-service (pid 347)
+      5,704K: android.hardware.lights-service.mediatek (pid 344)
+      5,324K: android.hardware.drm@1.3-service.widevine (pid 334)
+      5,280K: vendor.mediatek.tv.mtktvfactory@1.0-service (pid 2083)
+      4,972K: netd (pid 270)
+      4,672K: statsd (pid 269)
+      4,624K: wpa_supplicant (pid 1048)
+      4,308K: mediaserver (pid 462)
+      4,200K: media.extractor (pid 460)
+      3,740K: media.metrics (pid 461)
+      3,612K: keystore (pid 459)
+      3,584K: vendor.mediatek.tv.mtktvapi@1.0-service (pid 355)
+      3,584K: storaged (pid 463)
+      3,580K: app_man (pid 532)
+      3,524K: adbd (pid 428)
+      3,516K: ld-linux.so.3 (pid 479)
+      3,428K: installd (pid 458)
+      3,396K: hwservicemanager (pid 181)
+      3,364K: media.swcodec (pid 471)
+      3,356K: android.hardware.graphics.allocator@4.0-service (pid 336)
+      3,304K: android.hardware.media.c2@1.0-mediatek (pid 339)
+      3,296K: wificond (pid 451)
+      3,292K: vendor.mediatek.graphics.externalbuffer@1.0-service (pid 349)
+      3,208K: cameraserver (pid 453)
+      3,192K: vold (pid 190)
+      3,160K: midaemon (pid 373)
+      3,144K: android.hardware.wifi@1.0-service-lazy (pid 1041)
+      3,112K: dumpsys (pid 13430)
+      3,064K: init (pid 1)
+      3,004K: android.hardware.tv.cec@1.0-service (pid 342)
+      3,000K: update_engine (pid 474)
+      2,976K: android.system.suspend@1.0-service (pid 216)
+      2,976K: android.hidl.allocator@1.0-service (pid 328)
+      2,936K: lmkd (pid 179)
+      2,936K: gatekeeperd (pid 473)
+      2,916K: servicemanager (pid 180)
+      2,876K: credstore (pid 357)
+      2,856K: android.hardware.drm@1.3-service.clearkey (pid 331)
+      2,848K: android.hardware.bluetooth@1.0-service (pid 329)
+      2,836K: android.hardware.drm@1.3-service.netflixdrm (pid 332)
+      2,788K: android.hardware.drm@1.3-service.playready (pid 333)
+      2,752K: android.hardware.health@2.1-service (pid 338)
+      2,740K: vendor.mediatek.camera.provider@2.4-external-service (pid 348)
+      2,732K: android.hardware.memtrack@1.0-service (pid 340)
+      2,732K: gpuservice (pid 358)
+      2,700K: traced (pid 449)
+      2,584K: MtkRmServer (pid 380)
+      2,572K: drmserver (pid 454)
+      2,532K: vendor.mediatek.tv.mtkrm@1.0-service (pid 354)
+      2,528K: android.hardware.keymaster@4.0-service.tee (pid 218)
+      2,476K: incidentd (pid 457)
+      2,452K: abb (pid 4590)
+      2,440K: android.hardware.gatekeeper@1.0-service (pid 335)
+      2,424K: android.hardware.cas@1.2-service (pid 330)
+      2,416K: android.hardware.thermal@2.0-service.mediatek (pid 341)
+      2,328K: vendor.mediatek.hardware.tv.networkproxy@1.0-service (pid 350)
+      2,304K: vendor.mediatek.tv.mtkdmservice@1.0-service (pid 352)
+      2,276K: vendor.mediatek.tv.mtkmtalservice@1.0-service (pid 353)
+      2,264K: vendor.mediatek.tv.cmpb@1.0-service (pid 351)
+      2,260K: vndservicemanager (pid 182)
+      2,228K: android.hardware.boot@1.1-service (pid 217)
+      2,224K: iptables-restore (pid 275)
+      2,196K: ip6tables-restore (pid 276)
+      2,096K: MtkRmInitServer (pid 374)
+      2,056K: tee-supplicant (pid 214)
+      2,056K: factory_svc (pid 366)
+      2,032K: sleep (pid 958)
+      1,984K: traced_probes (pid 447)
+      1,928K: sh (pid 213)
+      1,912K: sh (pid 465)
+      1,900K: tombstoned (pid 263)
+      1,872K: sh (pid 369)
+      1,872K: sh (pid 370)
+      1,832K: sh (pid 467)
+      1,380K: init (pid 167)
+      1,228K: ueventd (pid 169)
+        696K: mdnsd (pid 472)
+
+Total RSS by OOM adjustment:
+    400,820K: Native
+         50,524K: zygote (pid 271)
+         31,312K: webview_zygote (pid 1200)
+         18,220K: com.global.unitviptv (pid 9541)
+         14,304K: dtv_svc (pid 716)
+         11,088K: surfaceflinger (pid 359)
+          9,760K: media.codec (pid 464)
+          8,032K: android.hardware.graphics.composer@2.4-service (pid 337)
+          6,676K: mstar.hardware.mmdisp@1.0-service (pid 346)
+          6,312K: mstar.hardware.audio.service (pid 345)
+          6,084K: logd (pid 178)
+          6,076K: audioserver (pid 356)
+          6,024K: android.hardware.tv.input@1.0-service-mediatek (pid 343)
+          5,916K: mediatek.hardware.power-service (pid 347)
+          5,704K: android.hardware.lights-service.mediatek (pid 344)
+          5,324K: android.hardware.drm@1.3-service.widevine (pid 334)
+          5,280K: vendor.mediatek.tv.mtktvfactory@1.0-service (pid 2083)
+          4,972K: netd (pid 270)
+          4,672K: statsd (pid 269)
+          4,624K: wpa_supplicant (pid 1048)
+          4,308K: mediaserver (pid 462)
+          4,200K: media.extractor (pid 460)
+          3,740K: media.metrics (pid 461)
+          3,612K: keystore (pid 459)
+          3,584K: vendor.mediatek.tv.mtktvapi@1.0-service (pid 355)
+          3,584K: storaged (pid 463)
+          3,580K: app_man (pid 532)
+          3,524K: adbd (pid 428)
+          3,516K: ld-linux.so.3 (pid 479)
+          3,428K: installd (pid 458)
+          3,396K: hwservicemanager (pid 181)
+          3,364K: media.swcodec (pid 471)
+          3,356K: android.hardware.graphics.allocator@4.0-service (pid 336)
+          3,304K: android.hardware.media.c2@1.0-mediatek (pid 339)
+          3,296K: wificond (pid 451)
+          3,292K: vendor.mediatek.graphics.externalbuffer@1.0-service (pid 349)
+          3,208K: cameraserver (pid 453)
+          3,192K: vold (pid 190)
+          3,160K: midaemon (pid 373)
+          3,144K: android.hardware.wifi@1.0-service-lazy (pid 1041)
+          3,112K: dumpsys (pid 13430)
+          3,064K: init (pid 1)
+          3,004K: android.hardware.tv.cec@1.0-service (pid 342)
+          3,000K: update_engine (pid 474)
+          2,976K: android.system.suspend@1.0-service (pid 216)
+          2,976K: android.hidl.allocator@1.0-service (pid 328)
+          2,936K: lmkd (pid 179)
+          2,936K: gatekeeperd (pid 473)
+          2,916K: servicemanager (pid 180)
+          2,876K: credstore (pid 357)
+          2,856K: android.hardware.drm@1.3-service.clearkey (pid 331)
+          2,848K: android.hardware.bluetooth@1.0-service (pid 329)
+          2,836K: android.hardware.drm@1.3-service.netflixdrm (pid 332)
+          2,788K: android.hardware.drm@1.3-service.playready (pid 333)
+          2,752K: android.hardware.health@2.1-service (pid 338)
+          2,740K: vendor.mediatek.camera.provider@2.4-external-service (pid 348)
+          2,732K: android.hardware.memtrack@1.0-service (pid 340)
+          2,732K: gpuservice (pid 358)
+          2,700K: traced (pid 449)
+          2,584K: MtkRmServer (pid 380)
+          2,572K: drmserver (pid 454)
+          2,532K: vendor.mediatek.tv.mtkrm@1.0-service (pid 354)
+          2,528K: android.hardware.keymaster@4.0-service.tee (pid 218)
+          2,476K: incidentd (pid 457)
+          2,452K: abb (pid 4590)
+          2,440K: android.hardware.gatekeeper@1.0-service (pid 335)
+          2,424K: android.hardware.cas@1.2-service (pid 330)
+          2,416K: android.hardware.thermal@2.0-service.mediatek (pid 341)
+          2,328K: vendor.mediatek.hardware.tv.networkproxy@1.0-service (pid 350)
+          2,304K: vendor.mediatek.tv.mtkdmservice@1.0-service (pid 352)
+          2,276K: vendor.mediatek.tv.mtkmtalservice@1.0-service (pid 353)
+          2,264K: vendor.mediatek.tv.cmpb@1.0-service (pid 351)
+          2,260K: vndservicemanager (pid 182)
+          2,228K: android.hardware.boot@1.1-service (pid 217)
+          2,224K: iptables-restore (pid 275)
+          2,196K: ip6tables-restore (pid 276)
+          2,096K: MtkRmInitServer (pid 374)
+          2,056K: tee-supplicant (pid 214)
+          2,056K: factory_svc (pid 366)
+          2,032K: sleep (pid 958)
+          1,984K: traced_probes (pid 447)
+          1,928K: sh (pid 213)
+          1,912K: sh (pid 465)
+          1,900K: tombstoned (pid 263)
+          1,872K: sh (pid 369)
+          1,872K: sh (pid 370)
+          1,832K: sh (pid 467)
+          1,380K: init (pid 167)
+          1,228K: ueventd (pid 169)
+            696K: mdnsd (pid 472)
+    146,252K: System
+        146,252K: system (pid 751)
+    483,060K: Persistent
+         61,344K: com.android.systemui (pid 1072)
+         52,700K: com.mediatek.tvinput (pid 1591)
+         50,924K: com.mediatek.tv.service (pid 1169)
+         50,284K: com.android.tv.settings (pid 1212)
+         46,360K: com.ktc.serialport (pid 1739)
+         45,544K: ktc.factorymenu.ui (pid 1713)
+         44,892K: com.mediatek.autopair (pid 1687)
+         44,552K: com.ktc.tv.factory (pid 1660)
+         44,124K: com.mediatek.network (pid 1575)
+         42,336K: com.android.se (pid 1285)
+    112,272K: Persistent Service
+         61,152K: com.android.bluetooth (pid 1050)
+         51,120K: com.android.providers.media.module (pid 1645)
+    264,940K: Foreground
+        264,940K: com.global.unitviptv (pid 9517 / activities)
+    286,976K: Visible
+        179,692K: com.google.android.gms (pid 1537)
+         54,128K: com.google.android.tv.remote.service (pid 1499)
+         53,156K: com.google.android.ext.services (pid 1332)
+    332,336K: Perceptible
+        112,360K: com.spotify.tv.android (pid 2048)
+         66,756K: com.google.android.inputmethod.latin (pid 1467)
+         62,668K: com.mediatek.wwtv.tvcenter (pid 1901)
+         48,304K: com.google.android.tts (pid 2124)
+         42,248K: com.dolby.android.audio.service (pid 2101)
+     76,704K: Home
+         76,704K: com.ansub.tvhome (pid 9273 / activities)
+     53,608K: Previous
+         53,608K: com.android.providers.tv (pid 1876)
+    126,440K: B Services
+         65,980K: com.google.android.apps.mediashell (pid 2945)
+         60,460K: com.netflix.ninja (pid 2542)
+    728,992K: Cached
+        163,556K: com.android.vending (pid 12388)
+        130,856K: com.android.vending:background (pid 12501)
+         90,708K: com.stremio.one (pid 9836)
+         62,716K: com.google.process.gservices (pid 12073)
+         62,156K: com.google.process.gapps (pid 12157)
+         61,624K: com.google.android.partnersetup (pid 12751)
+         60,260K: com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0 (pid 4328)
+         51,280K: com.google.android.permissioncontroller (pid 2829)
+         45,836K: com.android.keychain (pid 4608)
+
+Total RSS by category:
+    619,360K: .so mmap
+    494,220K: .art mmap
+    478,680K: .apk mmap
+    327,616K: .jar mmap
+    272,340K: .oat mmap
+    266,388K: Native
+    122,380K: Dalvik
+    120,816K: .dex mmap
+     71,536K: Other mmap
+     60,272K: Other dev
+     60,064K: Dalvik Other
+     58,520K: GL mtrack
+     38,904K: Unknown
+     18,392K: Stack
+      2,592K: Ashmem
+        320K: .ttf mmap
+          0K: Cursor
+          0K: Gfx dev
+          0K: EGL mtrack
+          0K: Other mtrack
+
+Total PSS by process:
+    245,475K: com.global.unitviptv (pid 9517 / activities)
+    114,333K: com.google.android.gms (pid 1537)
+     83,627K: system (pid 751)
+     67,344K: com.android.vending (pid 12388)
+     65,006K: com.spotify.tv.android (pid 2048)
+     52,511K: com.android.vending:background (pid 12501)
+     40,514K: com.stremio.one (pid 9836)
+     39,303K: com.netflix.ninja (pid 2542)
+     29,958K: com.ansub.tvhome (pid 9273 / activities)
+     24,932K: com.google.android.apps.mediashell (pid 2945)
+     24,559K: com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0 (pid 4328)
+     23,578K: com.mediatek.wwtv.tvcenter (pid 1901)
+     23,555K: dtv_svc (pid 716)
+     21,043K: com.google.android.tts (pid 2124)
+     17,957K: com.android.systemui (pid 1072)
+     17,653K: com.google.android.inputmethod.latin (pid 1467)
+     16,255K: com.android.tv.settings (pid 1212)
+     15,340K: com.android.bluetooth (pid 1050)
+     13,886K: surfaceflinger (pid 359)
+     11,273K: com.android.providers.media.module (pid 1645)
+      9,139K: com.mediatek.tvinput (pid 1591)
+      8,961K: com.android.providers.tv (pid 1876)
+      7,903K: com.google.android.tv.remote.service (pid 1499)
+      7,805K: com.google.android.permissioncontroller (pid 2829)
+      7,264K: com.mediatek.tv.service (pid 1169)
+      6,883K: com.google.process.gapps (pid 12157)
+      6,582K: com.google.process.gservices (pid 12073)
+      6,324K: com.google.android.partnersetup (pid 12751)
+      5,955K: ktc.factorymenu.ui (pid 1713)
+      5,917K: media.codec (pid 464)
+      5,725K: com.google.android.ext.services (pid 1332)
+      5,719K: com.ktc.serialport (pid 1739)
+      5,067K: audioserver (pid 356)
+      4,739K: logd (pid 178)
+      4,694K: com.mediatek.network (pid 1575)
+      4,578K: com.ktc.tv.factory (pid 1660)
+      4,506K: mstar.hardware.mmdisp@1.0-service (pid 346)
+      4,105K: android.hardware.graphics.composer@2.4-service (pid 337)
+      3,948K: com.mediatek.autopair (pid 1687)
+      3,849K: com.android.keychain (pid 4608)
+      3,741K: zygote (pid 271)
+      3,683K: com.global.unitviptv (pid 9541)
+      3,393K: com.android.se (pid 1285)
+      3,347K: com.dolby.android.audio.service (pid 2101)
+      3,296K: android.hardware.drm@1.3-service.widevine (pid 334)
+      3,140K: mediaserver (pid 462)
+      3,053K: media.extractor (pid 460)
+      2,949K: statsd (pid 269)
+      2,907K: webview_zygote (pid 1200)
+      2,855K: init (pid 1)
+      2,815K: wpa_supplicant (pid 1048)
+      2,706K: vendor.mediatek.tv.mtktvapi@1.0-service (pid 355)
+      2,699K: mstar.hardware.audio.service (pid 345)
+      2,690K: cameraserver (pid 453)
+      2,459K: netd (pid 270)
+      2,422K: android.hardware.tv.input@1.0-service-mediatek (pid 343)
+      2,326K: media.swcodec (pid 471)
+      1,983K: media.metrics (pid 461)
+      1,853K: android.hardware.media.c2@1.0-mediatek (pid 339)
+      1,848K: midaemon (pid 373)
+      1,770K: vendor.mediatek.tv.mtktvfactory@1.0-service (pid 2083)
+      1,640K: mediatek.hardware.power-service (pid 347)
+      1,549K: vendor.mediatek.camera.provider@2.4-external-service (pid 348)
+      1,446K: app_man (pid 532)
+      1,421K: android.hardware.lights-service.mediatek (pid 344)
+      1,418K: android.hardware.graphics.allocator@4.0-service (pid 336)
+      1,399K: android.hardware.wifi@1.0-service-lazy (pid 1041)
+      1,362K: vendor.mediatek.graphics.externalbuffer@1.0-service (pid 349)
+      1,351K: adbd (pid 428)
+      1,319K: storaged (pid 463)
+      1,308K: android.hardware.tv.cec@1.0-service (pid 342)
+      1,284K: ueventd (pid 169)
+      1,261K: vold (pid 190)
+      1,250K: ld-linux.so.3 (pid 479)
+      1,241K: keystore (pid 459)
+      1,209K: init (pid 167)
+      1,178K: installd (pid 458)
+      1,141K: wificond (pid 451)
+      1,112K: vendor.mediatek.tv.mtkdmservice@1.0-service (pid 352)
+      1,110K: traced (pid 449)
+      1,095K: MtkRmServer (pid 380)
+      1,024K: hwservicemanager (pid 181)
+      1,018K: update_engine (pid 474)
+      1,007K: gpuservice (pid 358)
+        979K: android.hardware.drm@1.3-service.playready (pid 333)
+        963K: vendor.mediatek.tv.cmpb@1.0-service (pid 351)
+        954K: android.hardware.drm@1.3-service.clearkey (pid 331)
+        943K: vendor.mediatek.tv.mtkrm@1.0-service (pid 354)
+        941K: credstore (pid 357)
+        887K: gatekeeperd (pid 473)
+        872K: android.hardware.drm@1.3-service.netflixdrm (pid 332)
+        853K: servicemanager (pid 180)
+        829K: android.hardware.keymaster@4.0-service.tee (pid 218)
+        819K: vendor.mediatek.hardware.tv.networkproxy@1.0-service (pid 350)
+        807K: dumpsys (pid 13430)
+        806K: android.hardware.bluetooth@1.0-service (pid 329)
+        805K: drmserver (pid 454)
+        798K: android.hardware.cas@1.2-service (pid 330)
+        784K: android.hardware.health@2.1-service (pid 338)
+        781K: android.hardware.memtrack@1.0-service (pid 340)
+        777K: android.system.suspend@1.0-service (pid 216)
+        764K: incidentd (pid 457)
+        762K: vendor.mediatek.tv.mtkmtalservice@1.0-service (pid 353)
+        738K: android.hardware.gatekeeper@1.0-service (pid 335)
+        707K: vndservicemanager (pid 182)
+        700K: mdnsd (pid 472)
+        678K: android.hardware.thermal@2.0-service.mediatek (pid 341)
+        677K: android.hardware.boot@1.1-service (pid 217)
+        663K: abb (pid 4590)
+        628K: sleep (pid 958)
+        597K: android.hidl.allocator@1.0-service (pid 328)
+        589K: lmkd (pid 179)
+        564K: MtkRmInitServer (pid 374)
+        541K: ip6tables-restore (pid 276)
+        540K: tee-supplicant (pid 214)
+        537K: iptables-restore (pid 275)
+        531K: traced_probes (pid 447)
+        523K: sh (pid 465)
+        519K: sh (pid 467)
+        518K: sh (pid 369)
+        514K: sh (pid 370)
+        507K: sh (pid 213)
+        439K: factory_svc (pid 366)
+        435K: tombstoned (pid 263)
+
+Total PSS by OOM adjustment:
+    170,382K: Native
+         23,555K: dtv_svc (pid 716)
+         13,886K: surfaceflinger (pid 359)
+          5,917K: media.codec (pid 464)
+          5,067K: audioserver (pid 356)
+          4,739K: logd (pid 178)
+          4,506K: mstar.hardware.mmdisp@1.0-service (pid 346)
+          4,105K: android.hardware.graphics.composer@2.4-service (pid 337)
+          3,741K: zygote (pid 271)
+          3,683K: com.global.unitviptv (pid 9541)
+          3,296K: android.hardware.drm@1.3-service.widevine (pid 334)
+          3,140K: mediaserver (pid 462)
+          3,053K: media.extractor (pid 460)
+          2,949K: statsd (pid 269)
+          2,907K: webview_zygote (pid 1200)
+          2,855K: init (pid 1)
+          2,815K: wpa_supplicant (pid 1048)
+          2,706K: vendor.mediatek.tv.mtktvapi@1.0-service (pid 355)
+          2,699K: mstar.hardware.audio.service (pid 345)
+          2,690K: cameraserver (pid 453)
+          2,459K: netd (pid 270)
+          2,422K: android.hardware.tv.input@1.0-service-mediatek (pid 343)
+          2,326K: media.swcodec (pid 471)
+          1,983K: media.metrics (pid 461)
+          1,853K: android.hardware.media.c2@1.0-mediatek (pid 339)
+          1,848K: midaemon (pid 373)
+          1,770K: vendor.mediatek.tv.mtktvfactory@1.0-service (pid 2083)
+          1,640K: mediatek.hardware.power-service (pid 347)
+          1,549K: vendor.mediatek.camera.provider@2.4-external-service (pid 348)
+          1,446K: app_man (pid 532)
+          1,421K: android.hardware.lights-service.mediatek (pid 344)
+          1,418K: android.hardware.graphics.allocator@4.0-service (pid 336)
+          1,399K: android.hardware.wifi@1.0-service-lazy (pid 1041)
+          1,362K: vendor.mediatek.graphics.externalbuffer@1.0-service (pid 349)
+          1,351K: adbd (pid 428)
+          1,319K: storaged (pid 463)
+          1,308K: android.hardware.tv.cec@1.0-service (pid 342)
+          1,284K: ueventd (pid 169)
+          1,261K: vold (pid 190)
+          1,250K: ld-linux.so.3 (pid 479)
+          1,241K: keystore (pid 459)
+          1,209K: init (pid 167)
+          1,178K: installd (pid 458)
+          1,141K: wificond (pid 451)
+          1,112K: vendor.mediatek.tv.mtkdmservice@1.0-service (pid 352)
+          1,110K: traced (pid 449)
+          1,095K: MtkRmServer (pid 380)
+          1,024K: hwservicemanager (pid 181)
+          1,018K: update_engine (pid 474)
+          1,007K: gpuservice (pid 358)
+            979K: android.hardware.drm@1.3-service.playready (pid 333)
+            963K: vendor.mediatek.tv.cmpb@1.0-service (pid 351)
+            954K: android.hardware.drm@1.3-service.clearkey (pid 331)
+            943K: vendor.mediatek.tv.mtkrm@1.0-service (pid 354)
+            941K: credstore (pid 357)
+            887K: gatekeeperd (pid 473)
+            872K: android.hardware.drm@1.3-service.netflixdrm (pid 332)
+            853K: servicemanager (pid 180)
+            829K: android.hardware.keymaster@4.0-service.tee (pid 218)
+            819K: vendor.mediatek.hardware.tv.networkproxy@1.0-service (pid 350)
+            807K: dumpsys (pid 13430)
+            806K: android.hardware.bluetooth@1.0-service (pid 329)
+            805K: drmserver (pid 454)
+            798K: android.hardware.cas@1.2-service (pid 330)
+            784K: android.hardware.health@2.1-service (pid 338)
+            781K: android.hardware.memtrack@1.0-service (pid 340)
+            777K: android.system.suspend@1.0-service (pid 216)
+            764K: incidentd (pid 457)
+            762K: vendor.mediatek.tv.mtkmtalservice@1.0-service (pid 353)
+            738K: android.hardware.gatekeeper@1.0-service (pid 335)
+            707K: vndservicemanager (pid 182)
+            700K: mdnsd (pid 472)
+            678K: android.hardware.thermal@2.0-service.mediatek (pid 341)
+            677K: android.hardware.boot@1.1-service (pid 217)
+            663K: abb (pid 4590)
+            628K: sleep (pid 958)
+            597K: android.hidl.allocator@1.0-service (pid 328)
+            589K: lmkd (pid 179)
+            564K: MtkRmInitServer (pid 374)
+            541K: ip6tables-restore (pid 276)
+            540K: tee-supplicant (pid 214)
+            537K: iptables-restore (pid 275)
+            531K: traced_probes (pid 447)
+            523K: sh (pid 465)
+            519K: sh (pid 467)
+            518K: sh (pid 369)
+            514K: sh (pid 370)
+            507K: sh (pid 213)
+            439K: factory_svc (pid 366)
+            435K: tombstoned (pid 263)
+     83,627K: System
+         83,627K: system (pid 751)
+     78,902K: Persistent
+         17,957K: com.android.systemui (pid 1072)
+         16,255K: com.android.tv.settings (pid 1212)
+          9,139K: com.mediatek.tvinput (pid 1591)
+          7,264K: com.mediatek.tv.service (pid 1169)
+          5,955K: ktc.factorymenu.ui (pid 1713)
+          5,719K: com.ktc.serialport (pid 1739)
+          4,694K: com.mediatek.network (pid 1575)
+          4,578K: com.ktc.tv.factory (pid 1660)
+          3,948K: com.mediatek.autopair (pid 1687)
+          3,393K: com.android.se (pid 1285)
+     26,613K: Persistent Service
+         15,340K: com.android.bluetooth (pid 1050)
+         11,273K: com.android.providers.media.module (pid 1645)
+    245,475K: Foreground
+        245,475K: com.global.unitviptv (pid 9517 / activities)
+    127,961K: Visible
+        114,333K: com.google.android.gms (pid 1537)
+          7,903K: com.google.android.tv.remote.service (pid 1499)
+          5,725K: com.google.android.ext.services (pid 1332)
+    130,627K: Perceptible
+         65,006K: com.spotify.tv.android (pid 2048)
+         23,578K: com.mediatek.wwtv.tvcenter (pid 1901)
+         21,043K: com.google.android.tts (pid 2124)
+         17,653K: com.google.android.inputmethod.latin (pid 1467)
+          3,347K: com.dolby.android.audio.service (pid 2101)
+     29,958K: Home
+         29,958K: com.ansub.tvhome (pid 9273 / activities)
+      8,961K: Previous
+          8,961K: com.android.providers.tv (pid 1876)
+     64,235K: B Services
+         39,303K: com.netflix.ninja (pid 2542)
+         24,932K: com.google.android.apps.mediashell (pid 2945)
+    216,371K: Cached
+         67,344K: com.android.vending (pid 12388)
+         52,511K: com.android.vending:background (pid 12501)
+         40,514K: com.stremio.one (pid 9836)
+         24,559K: com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0 (pid 4328)
+          7,805K: com.google.android.permissioncontroller (pid 2829)
+          6,883K: com.google.process.gapps (pid 12157)
+          6,582K: com.google.process.gservices (pid 12073)
+          6,324K: com.google.android.partnersetup (pid 12751)
+          3,849K: com.android.keychain (pid 4608)
+
+Total PSS by category:
+    233,160K: Native
+    101,233K: .apk mmap
+     98,074K: Dalvik
+     96,262K: .dex mmap
+     76,841K: .so mmap
+     64,102K: .art mmap
+     58,520K: GL mtrack
+     32,726K: .jar mmap
+     31,509K: Dalvik Other
+     30,259K: Unknown
+     18,276K: Stack
+     13,005K: Other mmap
+     12,388K: .oat mmap
+      4,129K: Other dev
+      1,148K: Ashmem
+        320K: .ttf mmap
+          0K: Cursor
+          0K: Gfx dev
+          0K: EGL mtrack
+          0K: Other mtrack
+
+Total RAM: 1,830,732K (status normal)
+ Free RAM:   630,583K (  216,371K cached pss +   366,572K cached kernel +    47,640K free)
+      ION:   339,236K (   84,368K mapped +   253,968K unmapped +       900K pools)
+ Used RAM: 1,497,633K (  966,741K used pss +   530,892K kernel)
+ Lost RAM:   -50,676K
+     ZRAM:    64,352K physical used for   318,208K in swap (  511,996K total swap)
+   Tuning: 192 (large 512), oom    81,920K, restore limit    27,306K (high-end-gfx)
+PS C:\WINDOWS\System32> adb shell top -b -n 1
+Tasks: 361 total,   2 running, 359 sleeping,   0 stopped,   0 zombie
+  Mem:  1830732K total,  1783812K used,  48046080 free,  28794880 buffers
+ Swap:   511996K total,   318208K used,   193788K free,   628792K cached
+400%cpu  14%user   0%nice  71%sys 314%idle   0%iow   0%irq   0%sirq   0%host
+   PID USER         PR  NI VIRT  RES  SHR S[%CPU] %MEM     TIME+ ARGS
+ 13433 shell        20   0 9.0M 3.7M 3.0M R 28.5   0.2   0:00.12 top -b -n 1
+ 11493 root         20   0    0    0    0 I 20.0   0.0   8:03.58 [kworker/0:3-IP_IRQ_WQ]
+ 13338 root         20   0    0    0    0 D  8.5   0.0   0:21.94 [kworker/0:2+events]
+   592 root         RT   0    0    0    0 R  8.5   0.0  12:35.65 [DMS_SetMVOP_Tas]
+  9517 u0_a92       10 -10 2.2G 255M  88M S  5.7  14.2 103:29.09 com.global.unitviptv
+   292 root         RT   0    0    0    0 S  5.7   0.0  16:36.72 [irq/207-scaler]
+   793 root          0 -20    0    0    0 S  2.8   0.0   1:40.76 [MTGVDO_Callback]
+   586 root         RT   0    0    0    0 S  2.8   0.0   1:47.82 [irq/207-(null)]
+   479 root         20   0 261M 3.4M 3.3M S  2.8   0.1   5:01.88 ld-linux.so.3 /mnt/vendor/tvservice/bin/cpu_audio
+   464 mediacodec   20   0 314M 9.1M 7.5M S  2.8   0.5   8:11.98 media.codec hw/android.hardware.media.omx@1.0-service
+   405 root         20   0    0    0    0 D  2.8   0.0   2:08.66 [DMX_Filt_Task]
+   402 root         RT   0    0    0    0 S  2.8   0.0   0:29.29 [irq/48-(null)]
+   337 system       -3  -4 305M 7.7M 6.8M S  2.8   0.4   6:02.60 android.hardware.graphics.composer@2.4-service
+ 13428 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kworker/2:1H]
+ 13424 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kworker/u9:1-blk_crypto_wq]
+ 13420 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kworker/1:2H-kblockd]
+ 13414 root         20   0    0    0    0 I  0.0   0.0   0:00.00 [kworker/2:0-events]
+ 13410 root         20   0    0    0    0 I  0.0   0.0   0:00.00 [kworker/1:0-events]
+ 13408 root         20   0    0    0    0 I  0.0   0.0   0:00.22 [kworker/3:0-events]
+ 13382 root          0 -20    0    0    0 I  0.0   0.0   0:00.02 [kworker/3:2H-mmc_complete]
+ 13378 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kworker/0:0H-kblockd]
+ 13356 root         20   0    0    0    0 I  0.0   0.0   0:00.07 [kworker/u8:0-kverityd]
+ 13345 root          0 -20    0    0    0 I  0.0   0.0   0:00.06 [kworker/2:0H-mmc_complete]
+ 13339 root          0 -20    0    0    0 I  0.0   0.0   0:00.19 [kworker/1:0H-mmc_complete]
+ 13334 root         20   0    0    0    0 I  0.0   0.0   0:01.06 [kworker/2:2-events]
+ 13326 root         20   0    0    0    0 I  0.0   0.0   0:01.23 [kworker/1:2-events_power_efficient]
+ 13325 root         20   0    0    0    0 I  0.0   0.0   0:00.76 [kworker/3:2-events]
+ 13316 root          0 -20    0    0    0 I  0.0   0.0   0:00.02 [kworker/u9:2-fscrypt_read_queue]
+ 13287 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kworker/3:1H-kblockd]
+ 13285 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kworker/0:1H]
+ 13261 root          0 -20    0    0    0 I  0.0   0.0   0:00.13 [kworker/1:1H-kblockd]
+ 13250 root         20   0    0    0    0 I  0.0   0.0   0:00.00 [kworker/2:1-events]
+ 13243 root         20   0    0    0    0 I  0.0   0.0   0:00.12 [kworker/3:1-events]
+ 13221 root          0 -20    0    0    0 I  0.0   0.0   0:00.34 [kworker/3:0H-kblockd]
+ 13210 root         20   0    0    0    0 I  0.0   0.0   0:00.05 [kworker/u8:2-kverityd]
+ 13158 root         20   0    0    0    0 I  0.0   0.0   0:06.23 [kworker/1:1-events]
+ 13101 root          0 -20    0    0    0 I  0.0   0.0   0:00.35 [kworker/0:2H-kblockd]
+ 13089 root         20   0    0    0    0 I  0.0   0.0   1:19.95 [kworker/0:1-IP_IRQ_WQ]
+ 13024 root          0 -20    0    0    0 I  0.0   0.0   0:00.16 [kworker/u9:0-blk_crypto_wq]
+ 12939 root         20   0    0    0    0 I  0.0   0.0   0:00.21 [kworker/u8:3-kverityd]
+ 12887 root         20   0    0    0    0 I  0.0   0.0   2:32.19 [kworker/0:0-IP_IRQ_WQ]
+ 12849 root          0 -20    0    0    0 I  0.0   0.0   0:01.16 [kworker/2:2H-kblockd]
+ 12751 u0_a72       20   0 1.1G  58M  40M S  0.0   3.2   0:00.18 com.google.android.partnersetup
+ 12644 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kbase_event]
+ 12501 u0_a52       20   0 1.3G 125M  92M S  0.0   7.0   0:05.69 com.android.vending:background
+ 12388 u0_a52       20   0 1.4G 154M 106M S  0.0   8.6   0:27.90 com.android.vending
+ 12370 root         RT   0    0    0    0 S  0.0   0.0   0:08.27 [irq/51-(null)]
+ 12369 root         RT   0    0    0    0 S  0.0   0.0   0:07.09 [DMS_CallBack_Ta]
+ 12362 root         20   0    0    0    0 D  0.0   0.0   0:00.00 [VDEC_EX_ALLOC_T]
+ 12361 root         20   0    0    0    0 D  0.0   0.0   0:00.04 [VDEC_EX_PERFRAM]
+ 12157 u0_a45       20   0 1.2G  60M  42M S  0.0   3.3   0:00.23 com.google.process.gapps
+ 12073 u0_a45       20   0 1.2G  60M  41M S  0.0   3.3   0:00.37 com.google.process.gservices
+ 12065 root          0 -20    0    0    0 I  0.0   0.0   0:00.63 [kworker/u9:3-fscrypt_read_queue]
+  9836 u0_a81       20   0 2.0G  86M  55M S  0.0   4.8   0:05.22 com.stremio.one
+  9760 root         RT   0    0    0    0 S  0.0   0.0   0:00.00 [irq/45-(null)]
+  9582 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kbase_event]
+  9541 u0_a92       10 -10 1.7G  18M 860K S  0.0   0.9   0:01.59 com.global.unitviptv
+  9301 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kbase_event]
+  9273 u0_a99       20   0 1.2G  74M  48M S  0.0   4.1   0:04.16 com.ansub.tvhome
+  4608 system       20   0 1.1G  44M  27M S  0.0   2.4   0:00.18 com.android.keychain
+  4590 shell        20   0  13M 2.3M 2.3M S  0.0   0.1   0:00.06 abb
+  4377 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kbase_event]
+  4328 u0_i9001     20   0 1.3G  56M  33M S  0.0   3.1   0:30.83 com.google.android.webview:sandboxed_process0:org.chromium.content.app.Sand
+  2945 u0_a49       20   0 1.3G  62M  42M S  0.0   3.4   0:31.62 com.google.android.apps.mediashell
+  2829 u0_a74       20   0 1.2G  48M  31M S  0.0   2.6   0:00.73 com.google.android.permissioncontroller
+  2542 u0_a55       20   0 1.5G  57M  37M S  0.0   3.1   0:07.77 com.netflix.ninja
+  2490 root         RT   0    0    0    0 S  0.0   0.0   0:00.00 [irq/60-(null)]
+  2466 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kbase_event]
+  2385 root         20   0    0    0    0 D  0.0   0.0   1:11.43 [VDEC_CALLBACK_T]
+  2381 root         RT   0    0    0    0 S  0.0   0.0   0:00.01 [irq/64-(null)]
+  2368 root         20   0    0    0    0 D  0.0   0.0   0:00.00 [VDEC_EX_Task]
+  2271 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kbase_event]
+  2124 u0_a63       20   0 1.2G  46M  30M S  0.0   2.5   0:08.32 com.google.android.tts
+  2101 u0_a41       20   0 1.1G  39M  24M S  0.0   2.2   0:00.11 com.dolby.android.audio.service
+  2083 root         20   0 248M 5.1M 5.1M S  0.0   0.2   0:02.43 vendor.mediatek.tv.mtktvfactory@1.0-service
+  2048 u0_a80       20   0 1.4G 106M  74M S  0.0   5.9   3:03.85 com.spotify.tv.android
+  1901 system       20   0 1.2G  60M  38M S  0.0   3.3   0:07.67 com.mediatek.wwtv.tvcenter
+  1876 u0_a26       20   0 1.2G  51M  32M S  0.0   2.8   0:26.42 com.android.providers.tv
+  1815 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kbase_event]
+  1739 system       20   0 1.2G  44M  28M S  0.0   2.4   0:00.31 com.ktc.serialport
+  1713 system       20   0 1.2G  43M  27M S  0.0   2.4   0:00.40 ktc.factorymenu.ui
+  1687 system       20   0 1.1G  42M  25M S  0.0   2.3   0:00.18 com.mediatek.autopair
+  1660 system       20   0 1.2G  42M  25M S  0.0   2.3   0:00.20 com.ktc.tv.factory
+  1645 u0_a75       20   0 1.2G  48M  29M S  0.0   2.6   0:01.08 com.android.providers.media.module
+  1591 u0_a69       20   0 1.2G  50M  31M S  0.0   2.8   0:15.06 com.mediatek.tvinput
+  1575 u0_a64       20   0 1.2G  42M  26M S  0.0   2.3   0:00.18 com.mediatek.network
+  1537 u0_a45       20   0 1.6G 170M 126M S  0.0   9.5   0:43.38 com.google.android.gms
+  1499 u0_a48       20   0 1.2G  52M  36M S  0.0   2.8   0:00.69 com.google.android.tv.remote.service
+  1467 u0_a60       20   0 1.2G  63M  42M S  0.0   3.5   0:02.92 com.google.android.inputmethod.latin
+  1421 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kbase_event]
+  1332 u0_a76       20   0 1.2G  50M  33M S  0.0   2.8   0:00.48 com.google.android.ext.services
+  1285 secure_element 20 0 1.1G  40M  24M S  0.0   2.2   0:00.09 com.android.se
+  1212 system       20   0 1.2G  48M  30M S  0.0   2.6   0:03.51 com.android.tv.settings
+  1200 webview_zygote 20 0 1.7G  31M  14M S  0.0   1.7   0:00.13 webview_zygote
+  1169 system       20   0 1.2G  48M  30M S  0.0   2.6   0:15.82 com.mediatek.tv.service
+  1072 u0_a70       20   0 1.2G  58M  35M S  0.0   3.2   0:02.44 com.android.systemui
+  1050 bluetooth    20   0 1.2G  57M  38M S  0.0   3.1   0:10.87 com.android.bluetooth
+  1048 wifi         20   0  16M 4.5M 4.0M S  0.0   0.2   0:00.54 wpa_supplicant -g@android:wpa_wlan0 -G1010 -O/data/vendor/wifi/wpa/sockets -Dnl80211 -iwlan0 -c /vendor/etc/wifi/wpa_supplicant.conf -N -Dnl80211 -ip2p0 -c /vendor/etc/wifi/p2p_supplicant.conf -puse_p2p_group_interface=1 -d
+  1041 wifi         20   0  14M 3.0M 2.7M S  0.0   0.1   0:03.35 android.hardware.wifi@1.0-service-lazy
+   958 root         20   0 9.3M 1.5M 1.5M S  0.0   0.0   0:00.01 sleep 100d
+   868 root         RT   0    0    0    0 D  0.0   0.0   0:00.00 [EU_ATD_MonThrea]
+   814 root         20   0    0    0    0 S  0.0   0.0   0:18.85 [MTGPMX_Event_Ha]
+   810 root         RT   0    0    0    0 S  0.0   0.0   0:00.00 [MTGFVR-Mon]
+   809 root         RT   0    0    0    0 S  0.0   0.0   0:00.00 [MTGFVR]
+   806 root         RT   0    0    0    0 S  0.0   0.0   0:00.00 [SWDMX 1]
+   805 root         RT   0    0    0    0 S  0.0   0.0   0:00.00 [SWDMX 0]
+   799 root         20   0    0    0    0 S  0.0   0.0   0:13.33 [MTGVDECEX_Callb]
+   795 root          0 -20    0    0    0 D  0.0   0.0   0:00.00 [ATV Mon]
+   794 root          0 -20    0    0    0 S  0.0   0.0   0:10.51 [MTGVDO_ApplySet]
+   792 root         RT   0    0    0    0 D  0.0   0.0   0:00.00 [TU0_CAB_ANA_Thr]
+   791 root         RT   0    0    0    0 D  0.0   0.0   0:00.00 [TU0_TER_ANA_Thr]
+   790 root         RT   0    0    0    0 D  0.0   0.0   0:00.00 [TU1_ORX_Thread]
+   789 root         RT   0    0    0    0 D  0.0   0.0   0:00.00 [TU1_CAB_Thread]
+   788 root         RT   0    0    0    0 D  0.0   0.0   0:15.32 [TU1_TER_Thread]
+   786 root          0 -20    0    0    0 S  0.0   0.0   0:20.43 [CEC_Task]
+   785 root         RT   0    0    0    0 S  0.0   0.0   0:00.21 [irq/49-(null)]
+   783 root         20   0    0    0    0 D  0.0   0.0   0:33.96 [HDMI EARC task]
+   777 root          0 -20    0    0    0 D  0.0   0.0   0:11.00 [MI_CEC_Task]
+   776 root          0 -20    0    0    0 D  0.0   0.0   0:00.00 [YPBPR Mon]
+   775 root          0 -20    0    0    0 D  0.0   0.0   0:00.00 [CVBS Mon]
+   774 root          0 -20    0    0    0 D  0.0   0.0   0:00.00 [VGA Mon]
+   773 root          0 -20    0    0    0 D  0.0   0.0   0:02.32 [HDMI Rx Mon]
+   772 root          0 -20    0    0    0 D  0.0   0.0   0:00.00 [hdcp22_hdmi_rx_]
+   771 root          0 -20    0    0    0 D  0.0   0.0   0:00.00 [hdcp22_hdmi_rx_]
+   770 root          0 -20    0    0    0 D  0.0   0.0   0:00.00 [hdcp22_hdmi_rx_]
+   769 root          0 -20    0    0    0 D  0.0   0.0   0:00.00 [hdcp22_hdmi_rx_]
+   762 root         20   0    0    0    0 S  0.0   0.0   0:00.00 [HDCP int task]
+   761 root         RT   0    0    0    0 S  0.0   0.0   0:00.00 [irq/53-(null)]
+   760 root         RT   0    0    0    0 S  0.0   0.0   0:00.00 [irq/84-(null)]
+   759 root         20   0    0    0    0 D  0.0   0.0   0:47.84 [HDMI Rx task]
+   751 system       18  -2 2.1G 134M  84M S  0.0   7.5   4:04.42 system_server
+   749 root         29   9    0    0    0 S  0.0   0.0   0:00.72 [GWatchDog]
+   716 root         20   0 1.2G  13M 6.1M S  0.0   0.7   5:39.36 dtv_svc --am -input_fifo
+   649 root         20   0    0    0    0 D  0.0   0.0   0:12.78 [AOUT_MuteMonTas]
+   611 root         20   0    0    0    0 S  0.0   0.0   0:04.75 [TsrMonTask]
+   610 root          0 -20    0    0    0 S  0.0   0.0   0:05.12 [EXTIN_POLLING_M]
+   608 root          0 -20    0    0    0 D  0.0   0.0   0:00.00 [HPD RX Handler]
+   607 root         20   0    0    0    0 D  0.0   0.0   0:00.00 [WdtTask]
+   605 root         20   0    0    0    0 S  0.0   0.0   0:04.70 [Audio Mon Task]
+   604 root         RT   0    0    0    0 S  0.0   0.0   0:00.00 [irq/128-(null)]
+   601 root         RT   0    0    0    0 S  0.0   0.0   0:06.51 [FSS_Mon_Task]
+   600 root          0 -20    0    0    0 D  0.0   0.0   0:00.00 [DISP_VE_AVOUT_M]
+   599 root         20   0    0    0    0 S  0.0   0.0   0:00.00 [HDR_SEAMLESS_IS]
+   598 root         RT   0    0    0    0 S  0.0   0.0   0:22.99 [DISP_PQ_Delay_M]
+   597 root         20   0    0    0    0 S  0.0   0.0   1:00.57 [DISP_MON]
+   595 root         RT   0    0    0    0 D  0.0   0.0   0:00.00 [DMS_SetMVOP_Sub]
+   594 root         RT   0    0    0    0 D  0.0   0.0   0:17.75 [DMS_SetDS_Task]
+   593 root         RT   0    0    0    0 D  0.0   0.0   0:19.70 [DMS_SetDS_Task]
+   591 root         20   0    0    0    0 D  0.0   0.0   0:13.97 [Mload No Signal]
+   590 root         20   0    0    0    0 D  0.0   0.0   0:00.00 [Trick_Bob_Sub]
+   589 root         20   0    0    0    0 D  0.0   0.0   0:00.00 [Trick_Bob_Main]
+   588 root         RT   0    0    0    0 D  0.0   0.0   1:04.04 [PCM_OfflineDete]
+   545 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kbase_event]
+   542 root         10 -10    0    0    0 S  0.0   0.0   0:00.00 [rx_thread]
+   541 root         10 -10    0    0    0 S  0.0   0.0   0:01.19 [hif_thread]
+   540 root         10 -10    0    0    0 S  0.0   0.0   0:06.61 [main_thread]
+   532 root         20   0 473M 3.1M 3.1M S  0.0   0.1   0:11.09 app_man -c /mnt/vendor/linux_rootfs/basic/am_config -s /mnt/vendor/linux_rootfs/basic/am_start.ini -input_fifo
+   474 root         20   0  17M 2.9M 2.8M S  0.0   0.1   0:00.07 update_engine --logtostderr --logtofile --foreground
+   473 system       20   0  13M 2.8M 2.8M S  0.0   0.1   0:00.02 gatekeeperd /data/misc/gatekeeper
+   472 mdnsr        20   0 2.4M 696K 468K S  0.0   0.0   0:03.23 mdnsd
+   471 mediacodec   20   0  45M 3.2M 2.6M S  0.0   0.1   0:01.01 media.swcodec oid.media.swcodec/bin/mediaswcodec
+   467 root         20   0 7.1M 1.7M 1.7M S  0.0   0.1   0:00.06 sh /vendor/bin/dtv_svc.sh
+   465 root         20   0 7.1M 1.8M 1.8M S  0.0   0.1   0:00.01 sh /vendor/bin/cpu_audio.sh
+   463 root         30  10  15M 3.4M 2.6M S  0.0   0.1   0:07.85 storaged
+   462 media        20   0  63M 3.2M 2.8M S  0.0   0.1   0:00.46 mediaserver
+   461 media        20   0  20M 3.4M 2.6M S  0.0   0.1   0:00.25 media.metrics diametrics
+   460 mediaex      20   0  36M 4.1M 4.0M S  0.0   0.2   0:00.29 media.extractor aextractor
+   459 keystore     20   0  14M 3.5M 3.0M S  0.0   0.1   0:00.27 keystore /data/misc/keystore
+   458 root         20   0  16M 3.3M 2.7M S  0.0   0.1   0:06.57 installd
+   457 incidentd    20   0  12M 2.4M 2.3M S  0.0   0.1   0:00.02 incidentd
+   454 drm          20   0  13M 2.5M 2.4M S  0.0   0.1   0:00.02 drmserver
+   453 cameraserver 20   0  37M 3.1M 2.9M S  0.0   0.1   0:00.39 cameraserver
+   451 wifi         20   0  15M 3.2M 2.9M S  0.0   0.1   0:02.90 wificond
+   449 nobody       20   0  10M 2.6M 2.3M S  0.0   0.1   0:00.09 traced
+   447 nobody       20   0 9.0M 1.9M 1.8M S  0.0   0.1   0:00.05 traced_probes
+   436 root         20   0    0    0    0 S  0.0   0.0   0:00.81 [Aout CallbackEv]
+   434 root         20   0    0    0    0 S  0.0   0.0   0:00.44 [Amp Status Mon ]
+   428 shell        20   0  26M 3.0M 2.7M S  0.0   0.1   0:00.20 adbd --root_seclabel=u:r:su:s0
+   426 root         RT   0    0    0    0 D  0.0   0.0   0:00.02 [VMon_EventHandl]
+   425 root         20   0    0    0    0 D  0.0   0.0   0:00.00 [VMon_Task]
+   424 root         20   0    0    0    0 D  0.0   0.0   0:00.00 [VMon_Task]
+   423 root         20   0    0    0    0 D  0.0   0.0   0:00.02 [VMon_Task]
+   412 root         RT   0    0    0    0 S  0.0   0.0   0:00.00 [irq/89-(null)]
+   411 root         RT   0    0    0    0 S  0.0   0.0   0:00.02 [SCRBMTGDMXTHRD]
+   410 root         RT   0    0    0    0 S  0.0   0.0   0:00.00 [MTGDMXTHRD]
+   409 root         20   0    0    0    0 D  0.0   0.0   0:00.00 [DMX_Filt_Task]
+   408 root         20   0    0    0    0 D  0.0   0.0   0:00.00 [DMX_Filt_Task]
+   407 root         20   0    0    0    0 D  0.0   0.0   0:00.00 [DMX_Filt_Task]
+   406 root         20   0    0    0    0 D  0.0   0.0   0:00.00 [DMX_Filt_Task]
+   401 root         20   0    0    0    0 D  0.0   0.0   0:41.30 [TSP_ISR_Task]
+   391 root         20   0    0    0    0 S  0.0   0.0   0:00.00 [btmtk_usb_wait_]
+   380 root         20   0  20M 2.1M 1.8M S  0.0   0.1   0:31.49 [MtkRmServer]
+   379 root          0 -20    0    0    0 D  0.0   0.0   0:00.00 [GPIO_Task]
+   374 root         20   0 9.0M 1.4M 1.4M S  0.0   0.0   0:00.01 MtkRmInitServer
+   373 root         20   0 316M 2.8M 2.8M S  0.0   0.1   0:01.16 midaemon
+   370 root         20   0 7.1M 1.8M 1.7M S  0.0   0.1   0:00.01 sh /vendor/bin/mtk_rm.sh
+   369 root         20   0 7.1M 1.8M 1.7M S  0.0   0.1   0:00.00 sh /vendor/bin/midaemon.sh
+   366 root         20   0 6.3M 1.7M 1.6M S  0.0   0.0   0:00.01 factory_svc
+   365 root         20   0    0    0    0 D  0.0   0.0   0:00.00 [MI SAR Task]
+   359 system       -3  -8 167M  11M 7.7M S  0.0   0.6   7:30.48 surfaceflinger
+   358 gpu_service  20   0  12M 2.6M 2.4M S  0.0   0.1   0:00.05 gpuservice
+   357 credstore    20   0  13M 2.8M 2.7M S  0.0   0.1   0:00.02 credstore /data/misc/credstore
+   356 audioserver  20   0  56M 5.8M 3.9M S  0.0   0.3   2:18.43 audioserver
+   355 system       20   0  43M 3.0M 3.0M S  0.0   0.1   0:08.10 vendor.mediatek.tv.mtktvapi@1.0-service
+   354 system       20   0  18M 2.2M 2.2M S  0.0   0.1   0:00.08 vendor.mediatek.tv.mtkrm@1.0-service
+   353 system       20   0  13M 2.2M 2.1M S  0.0   0.1   0:00.03 vendor.mediatek.tv.mtkmtalservice@1.0-service
+   352 system       20   0  18M 1.8M 1.8M S  0.0   0.1   0:00.02 vendor.mediatek.tv.mtkdmservice@1.0-service
+   351 system       20   0  16M 2.2M 2.1M S  0.0   0.1   0:00.03 vendor.mediatek.tv.cmpb@1.0-service
+   350 system       20   0  16M 2.2M 2.2M S  0.0   0.1   0:00.03 vendor.mediatek.hardware.tv.networkproxy@1.0-service
+   349 system       20   0  34M 3.2M 2.8M S  0.0   0.1   0:00.09 vendor.mediatek.graphics.externalbuffer@1.0-service
+   348 cameraserver 20   0  38M 2.6M 2.5M S  0.0   0.1   0:00.10 vendor.mediatek.camera.provider@2.4-external-service
+   347 system       20   0 242M 5.7M 5.3M S  0.0   0.3   0:00.33 mediatek.hardware.power-service
+   346 system       20   0 270M 6.1M 5.8M S  0.0   0.3   1:13.43 mstar.hardware.mmdisp@1.0-service
+   345 audioserver  20   0 259M 5.7M 5.1M S  0.0   0.3   3:06.81 mstar.hardware.audio.service
+   344 system       20   0  38M 5.5M 5.4M S  0.0   0.3   0:00.08 android.hardware.lights-service.mediatek
+   343 system       20   0 253M 5.8M 5.5M S  0.0   0.3   0:00.20 android.hardware.tv.input@1.0-service-mediatek
+   342 system       20   0  18M 2.9M 2.5M S  0.0   0.1   0:10.39 android.hardware.tv.cec@1.0-service
+   341 system       20   0  10M 2.3M 2.1M S  0.0   0.1   0:00.03 android.hardware.thermal@2.0-service.mediatek
+   340 system       20   0  10M 2.6M 2.1M S  0.0   0.1   0:01.07 android.hardware.memtrack@1.0-service
+   339 mediacodec   20   0  27M 2.4M 2.2M S  0.0   0.1   0:00.11 android.hardware.media.c2@1.0-mediatek
+   338 system       20   0  11M 2.6M 2.2M S  0.0   0.1   0:00.22 android.hardware.health@2.1-service
+   336 system       20   0  35M 3.2M 2.8M S  0.0   0.1   0:00.75 android.hardware.graphics.allocator@4.0-service
+   335 system       20   0  11M 2.3M 2.1M S  0.0   0.1   0:00.02 android.hardware.gatekeeper@1.0-service
+   334 media        20   0  24M 5.1M 4.3M S  0.0   0.2   0:04.02 android.hardware.drm@1.3-service.widevine
+   333 media        20   0  17M 2.7M 2.3M S  0.0   0.1   0:00.08 android.hardware.drm@1.3-service.playready
+   332 media        20   0  14M 2.7M 2.3M S  0.0   0.1   0:00.07 android.hardware.drm@1.3-service.netflixdrm
+   331 media        20   0  15M 2.7M 2.3M S  0.0   0.1   0:00.09 android.hardware.drm@1.3-service.clearkey
+   330 media        20   0  12M 2.3M 2.1M S  0.0   0.1   0:00.02 android.hardware.cas@1.2-service
+   329 bluetooth    20   0  13M 2.7M 2.2M S  0.0   0.1   0:08.71 android.hardware.bluetooth@1.0-service
+   328 system       20   0  10M 2.9M 2.3M S  0.0   0.1   0:00.02 android.hidl.allocator@1.0-service
+   327 root         20   0    0    0    0 S  0.0   0.0   0:00.01 [_MI_IR_KeyDelay]
+   326 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [cfg80211]
+   325 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [ext4-rsv-conver]
+   324 root         20   0    0    0    0 S  0.0   0.0   0:00.00 [jbd2/mmcblk0p42]
+   323 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [ext4-rsv-conver]
+   322 root         20   0    0    0    0 S  0.0   0.0   0:00.00 [jbd2/mmcblk0p37]
+   320 root          0 -20    0    0    0 D  0.0   0.0   0:00.00 [TSIO]
+   319 root          0 -20    0    0    0 D  0.0   0.0   0:00.00 [DMX]
+   318 root          0 -20    0    0    0 D  0.0   0.0   0:00.00 [DISPOUT]
+   317 root          0 -20    0    0    0 D  0.0   0.0   0:00.00 [DISP]
+   316 root         RT   0    0    0    0 S  0.0   0.0   0:00.00 [CLI]
+   315 root          0 -20    0    0    0 D  0.0   0.0   0:00.00 [CEC]
+   314 root          0 -20    0    0    0 D  0.0   0.0   0:00.00 [AUDIO]
+   310 root          0 -20    0    0    0 S  0.0   0.0   0:04.64 [Tuner_Task]
+   300 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [EventGroupWorkQ]
+   299 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [DV_GD_WQ]
+   298 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [HSE_TIMER_IRQ_W]
+   297 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [IP_IRQ_WQ]
+   296 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [TIMER_IRQ_WQ]
+   295 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [OP1_IRQ_WQ]
+   294 root         20   0    0    0    0 D  0.0   0.0   0:09.86 [SignalPollTask]
+   279 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [ms_otg_queue]
+   276 root         20   0 7.3M 2.1M 1.9M S  0.0   0.1   0:01.88 ip6tables-restore --noflush -w -v
+   275 root         20   0 7.3M 2.1M 1.9M S  0.0   0.1   0:01.89 iptables-restore --noflush -w -v
+   271 root         20   0 1.7G  49M  32M S  0.0   2.7   0:07.53 zygote
+   270 root         20   0  31M 4.5M 3.9M S  0.0   0.2   0:18.23 netd
+   269 statsd       20   0  22M 4.3M 2.7M S  0.0   0.2   0:05.59 statsd
+   263 tombstoned   20   0 7.3M 1.8M 1.8M S  0.0   0.1   0:00.01 tombstoned
+   237 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [ext4-rsv-conver]
+   236 root         20   0    0    0    0 S  0.0   0.0   0:08.78 [jbd2/dm-13-8]
+   232 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kdmflush]
+   218 nobody       20   0  11M 2.4M 2.2M S  0.0   0.1   0:00.40 android.hardware.keymaster@4.0-service.tee
+   217 root         20   0  10M 2.1M 2.1M S  0.0   0.1   0:00.03 android.hardware.boot@1.1-service
+   216 system       20   0  13M 2.8M 2.5M S  0.0   0.1   0:01.06 android.system.suspend@1.0-service
+   214 vendor_tee_supplicant 20 0 9.3M 2.0M 1.8M S 0.0 0.1 0:00.13 tee-supplicant
+   213 shell        20   0 7.1M 1.8M 1.8M S  0.0   0.1   0:00.01 sh
+   211 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kverityd]
+   210 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kdmflush]
+   209 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kverityd]
+   208 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kdmflush]
+   207 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [ext4-rsv-conver]
+   206 root         20   0    0    0    0 S  0.0   0.0   0:00.00 [jbd2/mmcblk0p8-]
+   205 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [ext4-rsv-conver]
+   204 root         20   0    0    0    0 S  0.0   0.0   0:00.00 [jbd2/mmcblk0p10]
+   203 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [ext4-rsv-conver]
+   202 root         20   0    0    0    0 S  0.0   0.0   0:00.00 [jbd2/mmcblk0p4-]
+   201 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [ext4-rsv-conver]
+   200 root         20   0    0    0    0 S  0.0   0.0   0:00.00 [jbd2/mmcblk0p9-]
+   199 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kverityd]
+   195 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kdmflush]
+   194 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [ext4-rsv-conver]
+   193 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kverityd]
+   192 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kdmflush]
+   191 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [ext4-rsv-conver]
+   190 root         20   0  19M 3.0M 2.9M S  0.0   0.1   0:00.22 vold --blkid_context=u:r:blkid:s0 --blkid_untrusted_context=u:r:blkid_untrusted:s0 --fsck_context=u:r:fsck:s0 --fsck_untrusted_context=u:r:fsck_untrusted:s0
+   183 root         -2   0    0    0    0 S  0.0   0.0   0:00.59 [psimon]
+   182 system       20   0  10M 2.2M 2.0M S  0.0   0.1   0:00.20 vndservicemanager /dev/vndbinder
+   181 system       20   0  11M 3.3M 2.8M S  0.0   0.1   0:01.49 hwservicemanager
+   180 system       20   0  10M 2.8M 2.4M S  0.0   0.1   0:03.14 servicemanager
+   179 lmkd         -2   0 7.9M 2.8M 2.3M S  0.0   0.1   0:03.95 lmkd
+   178 logd         30  10  17M 5.8M 2.1M S  0.0   0.3   2:02.69 logd
+   169 root         20   0  13M 1.2M 1.1M S  0.0   0.0   0:00.99 ueventd
+   167 root         20   0  12M 1.3M 1.2M S  0.0   0.0   0:02.03 init subcontext u:r:vendor_init:s0 15
+   165 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [ext4-rsv-conver]
+   164 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kverityd]
+   163 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kdmflush]
+   162 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [ext4-rsv-conver]
+   161 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kverityd]
+   160 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kdmflush]
+   158 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [ext4-rsv-conver]
+   156 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kverityd]
+   155 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kdmflush]
+   154 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [ext4-rsv-conver]
+   153 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kverityd]
+   152 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kdmflush]
+   148 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [ext4-rsv-conver]
+   146 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kverityd]
+   145 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kdmflush]
+   144 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kdmflush]
+   143 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kdmflush]
+   142 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kdmflush]
+   141 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kdmflush]
+   140 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [ext4-rsv-conver]
+   139 root         20   0    0    0    0 S  0.0   0.0   0:00.00 [jbd2/mmcblk0p19]
+   131 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [twoworlds_power]
+   120 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [ipv6_addrconf]
+   119 root         20   0    0    0    0 D  0.0   0.0   0:00.27 [Delay Free Task]
+   117 root         20   0    0    0    0 D  0.0   0.0   0:10.57 [Boost_Duration_]
+   116 root         20   0    0    0    0 D  0.0   0.0   0:02.16 [T_sensor_Check]
+   115 root         20   0    0    0    0 D  0.0   0.0   0:04.55 [mstar sdio hotp]
+   114 root         20   0    0    0    0 S  0.0   0.0   0:00.04 [Mstar_ir]
+   113 root         20   0    0    0    0 D  0.0   0.0   0:02.79 [GPIO poll Task]
+   112 root         20   0    0    0    0 S  0.0   0.0   0:00.47 [ion_system_heap]
+   108 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [mmc_complete]
+   107 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [dm_bufio_cache]
+   106 root         20   0    0    0    0 S  0.0   0.0   0:00.00 [Keypad_Check]
+   105 root         20   0    0    0    0 S  0.0   0.0   0:00.00 [kapmd]
+    65 root         20   0    0    0    0 S  0.0   0.0   0:31.08 [kswapd0]
+    45 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [mstar_mci]
+    44 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [ata_sff]
+    43 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [blk_crypto_wq]
+    41 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [kblockd]
+    40 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [crypto]
+    39 root         25   5    0    0    0 S  0.0   0.0   0:00.00 [ksmd]
+    38 root         20   0    0    0    0 S  0.0   0.0   0:00.07 [kcompactd0]
+    37 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [writeback]
+    36 root         20   0    0    0    0 S  0.0   0.0   0:00.00 [oom_reaper]
+    33 root         20   0    0    0    0 S  0.0   0.0   0:01.33 [kauditd]
+    32 root         20   0    0    0    0 S  0.0   0.0   0:00.00 [rcu_tasks_kthre]
+    31 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [netns]
+    30 root         20   0    0    0    0 S  0.0   0.0   0:00.01 [kdevtmpfs]
+    27 root         20   0    0    0    0 S  0.0   0.0   0:01.02 [ksoftirqd/3]
+    26 root         RT   0    0    0    0 S  0.0   0.0   0:01.04 [migration/3]
+    25 root         20   0    0    0    0 S  0.0   0.0   0:00.00 [cpuhp/3]
+    22 root         20   0    0    0    0 S  0.0   0.0   0:01.01 [ksoftirqd/2]
+    21 root         RT   0    0    0    0 S  0.0   0.0   0:01.51 [migration/2]
+    20 root         20   0    0    0    0 S  0.0   0.0   0:00.00 [cpuhp/2]
+    17 root         20   0    0    0    0 S  0.0   0.0   0:00.99 [ksoftirqd/1]
+    16 root         RT   0    0    0    0 S  0.0   0.0   0:01.71 [migration/1]
+    15 root         20   0    0    0    0 S  0.0   0.0   0:00.00 [cpuhp/1]
+    14 root         20   0    0    0    0 S  0.0   0.0   0:00.00 [cpuhp/0]
+    13 root         RT   0    0    0    0 S  0.0   0.0   0:00.97 [migration/0]
+    12 root         20   0    0    0    0 I  0.0   0.0   0:00.00 [rcu_bh]
+    11 root         20   0    0    0    0 I  0.0   0.0   0:00.02 [rcu_sched]
+    10 root         20   0    0    0    0 I  0.0   0.0   0:27.27 [rcu_preempt]
+     9 root         20   0    0    0    0 S  0.0   0.0   0:29.93 [ksoftirqd/0]
+     8 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [mm_percpu_wq]
+     4 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [rcu_par_gp]
+     3 root          0 -20    0    0    0 I  0.0   0.0   0:00.00 [rcu_gp]
+     2 root         20   0    0    0    0 S  0.0   0.0   0:00.06 [kthreadd]
+     1 root         20   0  36M 3.0M 2.4M S  0.0   0.1   0:02.66 init second_stage
+PS C:\WINDOWS\System32>
