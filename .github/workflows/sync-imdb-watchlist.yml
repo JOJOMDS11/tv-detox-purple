@@ -37,110 +37,139 @@ jobs:
           }
           profile_id = "p.kdmpbgbkxrrigqfvco4fujud3i"
 
+          TEMPLATE = """
+          query($userId: ID!, $first: Int!, $after: String) {
+            predefinedList(classType: WATCH_LIST, userId: $userId) {
+              titleListItemSearch(first: $first, after: $after) {
+                pageInfo { hasNextPage endCursor }
+                edges {
+                  title {
+                    id
+                    titleText { text }
+                    primaryImage { url }
+                    releaseYear { year }
+                    __EXTRA__
+                  }
+                }
+              }
+            }
+          }
+          """
+
+          VARIANTS = [
+              "titleType { id } genres { genres { text } }",
+              "titleType { id } titleGenres { genres { genre { text } } }",
+              "titleType { id }",
+              "",
+          ]
+
+
           def query(q, variables):
-              body = json.dumps({
-                  "query": q,
-                  "variables": variables
-              }).encode()
-              req = urllib.request.Request(
-                  endpoint, data=body, headers=headers, method="POST"
-              )
+              body = json.dumps({"query": q, "variables": variables}).encode()
+              req = urllib.request.Request(endpoint, data=body, headers=headers, method="POST")
               with urllib.request.urlopen(req, timeout=30) as response:
                   result = json.loads(response.read())
               if result.get("errors"):
                   raise RuntimeError(str(result["errors"][0]))
               return result["data"]
 
-          profile = query(
-              "query($profileId: ID!) { userProfile(input: {profileId: $profileId}) { userId } }",
-              {"profileId": profile_id}
-          )
-          user_id = profile["userProfile"]["userId"]
 
-          gql = """
-            query($userId: ID!, $first: Int!, $after: String) {
-              predefinedList(classType: WATCH_LIST, userId: $userId) {
-                titleListItemSearch(first: $first, after: $after) {
-                  pageInfo { hasNextPage endCursor }
-                  edges {
-                    title {
-                      id
-                      titleText { text }
-                      primaryImage { url }
-                      releaseYear { year }
-                    }
-                  }
-                }
+          def extract_genres(item):
+              names = []
+              for entry in (item.get("genres") or {}).get("genres") or []:
+                  text = (entry or {}).get("text")
+                  if text:
+                      names.append(text)
+              for entry in (item.get("titleGenres") or {}).get("genres") or []:
+                  text = ((entry or {}).get("genre") or {}).get("text")
+                  if text:
+                      names.append(text)
+              return names
+
+
+          def fetch_all(gql, user_id):
+              titles = []
+              seen = set()
+              after = None
+              page = 0
+              while True:
+                  data = query(gql, {"userId": user_id, "first": 50, "after": after})
+                  watchlist = data["predefinedList"]
+                  if watchlist is None:
+                      raise RuntimeError("IMDb Watchlist não encontrada.")
+                  connection = watchlist["titleListItemSearch"]
+                  edges = connection["edges"]
+                  page += 1
+                  for edge in edges:
+                      item = edge.get("title") or {}
+                      imdb_id = item.get("id")
+                      if not imdb_id or imdb_id in seen:
+                          continue
+                      seen.add(imdb_id)
+                      title_text = item.get("titleText") or {}
+                      image = item.get("primaryImage") or {}
+                      year = item.get("releaseYear") or {}
+                      kind = item.get("titleType") or {}
+                      titles.append({
+                          "id": imdb_id,
+                          "title": title_text.get("text") or "",
+                          "year": year.get("year"),
+                          "type": kind.get("id") or "",
+                          "genres": extract_genres(item),
+                          "poster": image.get("url") or "",
+                          "imdbUrl": "https://www.imdb.com/title/" + imdb_id + "/",
+                      })
+                  print(f"Página {page}: {len(edges)} itens; {len(titles)} títulos únicos.")
+                  info = connection["pageInfo"]
+                  if not info["hasNextPage"]:
+                      break
+                  if not info.get("endCursor"):
+                      raise RuntimeError("IMDb não retornou cursor para a próxima página.")
+                  after = info["endCursor"]
+              return titles
+
+
+          def main():
+              profile = query(
+                  "query($profileId: ID!) { userProfile(input: {profileId: $profileId}) { userId } }",
+                  {"profileId": profile_id},
+              )
+              user_id = profile["userProfile"]["userId"]
+
+              titles = None
+              last_error = None
+              for extra in VARIANTS:
+                  try:
+                      titles = fetch_all(TEMPLATE.replace("__EXTRA__", extra), user_id)
+                      print("Consulta usada: " + (extra or "básica"))
+                      break
+                  except Exception as error:
+                      last_error = error
+                      print("Consulta falhou (" + (extra or "básica") + "): " + str(error))
+
+              if not titles:
+                  raise RuntimeError("A IMDb não retornou títulos: " + str(last_error))
+
+              with_genres = sum(1 for t in titles if t["genres"])
+              print(f"{with_genres} de {len(titles)} títulos com gênero.")
+
+              output = {
+                  "source": "IMDb Watchlist",
+                  "profileId": profile_id,
+                  "updatedAt": datetime.now(timezone.utc).isoformat(),
+                  "count": len(titles),
+                  "titles": titles,
               }
-            }
-          """
 
-          titles = []
-          seen = set()
-          after = None
-          page = 0
+              os.makedirs("public", exist_ok=True)
+              with open("public/watchlist.json", "w", encoding="utf-8") as file:
+                  json.dump(output, file, ensure_ascii=False, separators=(",", ":"))
 
-          while True:
-              data = query(gql, {
-                  "userId": user_id,
-                  "first": 50,
-                  "after": after
-              })
+              print(f"JSON criado com {len(titles)} títulos.")
 
-              watchlist = data["predefinedList"]
-              if watchlist is None:
-                  raise RuntimeError("IMDb Watchlist não encontrada.")
 
-              connection = watchlist["titleListItemSearch"]
-              edges = connection["edges"]
-              page += 1
-
-              for edge in edges:
-                  item = edge.get("title") or {}
-                  imdb_id = item.get("id")
-                  if not imdb_id or imdb_id in seen:
-                      continue
-                  seen.add(imdb_id)
-
-                  title_text = item.get("titleText") or {}
-                  image = item.get("primaryImage") or {}
-                  year = item.get("releaseYear") or {}
-
-                  titles.append({
-                      "id": imdb_id,
-                      "title": title_text.get("text") or "",
-                      "year": year.get("year"),
-                      "poster": image.get("url") or "",
-                      "imdbUrl": "https://www.imdb.com/title/" + imdb_id + "/"
-                  })
-
-              print(f"Página {page}: {len(edges)} itens; {len(titles)} títulos únicos.")
-
-              info = connection["pageInfo"]
-              if not info["hasNextPage"]:
-                  break
-              if not info.get("endCursor"):
-                  raise RuntimeError("IMDb não retornou cursor para a próxima página.")
-              after = info["endCursor"]
-
-          if not titles:
-              raise RuntimeError("A IMDb retornou zero títulos; JSON não será publicado.")
-
-          output = {
-              "source": "IMDb Watchlist",
-              "profileId": profile_id,
-              "updatedAt": datetime.now(timezone.utc).isoformat(),
-              "count": len(titles),
-              "titles": titles
-          }
-
-          os.makedirs("public", exist_ok=True)
-          with open("public/watchlist.json", "w", encoding="utf-8") as file:
-              json.dump(output, file, ensure_ascii=False, separators=(",", ":"))
-
-          print(f"JSON criado com {len(titles)} títulos.")
+          main()
           PY
-
 
       - name: Publish updated JSON
         run: |

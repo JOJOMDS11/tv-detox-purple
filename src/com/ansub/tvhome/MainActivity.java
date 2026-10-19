@@ -493,7 +493,7 @@ public class MainActivity extends Activity {
     private void open(String key) {
         Intent i;
         if (ADD.equals(key)) {
-            showAddMenu(-1);
+            try { startActivity(new Intent(this, WatchlistActivity.class)); } catch (Exception ignored) {}
             return;
         } else if (SETTINGS.equals(key)) {
             i = new Intent(Settings.ACTION_SETTINGS);
