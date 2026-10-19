@@ -10,7 +10,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - name: Test public IMDb Watchlist API
+      - name: Test IMDb Watchlist pagination and title fields
         run: |
           python - <<'PY'
           import json
@@ -43,24 +43,67 @@ jobs:
           )
           user_id = profile["userProfile"]["userId"]
 
-          result = query("""
-              query($userId: ID!, $first: Int!) {
-                predefinedList(classType: WATCH_LIST, userId: $userId) {
-                  titleListItemSearch(first: $first) {
-                    pageInfo { hasNextPage }
-                    edges { title { id titleText { text } } }
+          gql = """
+            query($userId: ID!, $first: Int!, $after: String) {
+              predefinedList(classType: WATCH_LIST, userId: $userId) {
+                titleListItemSearch(first: $first, after: $after) {
+                  pageInfo { hasNextPage endCursor }
+                  edges {
+                    title {
+                      id
+                      titleText { text }
+                      primaryImage { url }
+                      releaseYear { year }
+                    }
                   }
                 }
               }
-          """, {"userId": user_id, "first": 10})
+            }
+          """
 
-          watchlist = result["predefinedList"]
-          if watchlist is None:
-              raise RuntimeError("IMDb não retornou uma Watchlist pública.")
+          after = None
+          total = 0
+          page = 0
 
-          connection = watchlist["titleListItemSearch"]
-          print("API IMDb acessível pelo GitHub Actions.")
-          print("ID de usuário resolvido:", user_id)
-          print("Títulos retornados na primeira página:", len(connection["edges"]))
-          print("Existem mais títulos:", connection["pageInfo"]["hasNextPage"])
+          print("IMDb user ID resolvido:", user_id)
+
+          while True:
+              data = query(gql, {
+                  "userId": user_id,
+                  "first": 50,
+                  "after": after
+              })
+
+              watchlist = data["predefinedList"]
+              if watchlist is None:
+                  raise RuntimeError("Watchlist pública não encontrada.")
+
+              connection = watchlist["titleListItemSearch"]
+              edges = connection["edges"]
+              page += 1
+              total += len(edges)
+
+              print(f"Página {page}: {len(edges)} títulos")
+
+              if page == 1:
+                  for edge in edges[:5]:
+                      title = edge["title"]
+                      image = title.get("primaryImage") or {}
+                      year = title.get("releaseYear") or {}
+                      print(json.dumps({
+                          "id": title.get("id"),
+                          "titulo": (title.get("titleText") or {}).get("text"),
+                          "ano": year.get("year"),
+                          "poster": image.get("url")
+                      }, ensure_ascii=False))
+
+              info = connection["pageInfo"]
+              if not info["hasNextPage"]:
+                  break
+              if not info.get("endCursor"):
+                  raise RuntimeError("IMDb indica outra página, mas não forneceu cursor.")
+              after = info["endCursor"]
+
+          print("TOTAL DE TÍTULOS:", total)
+          print("PAGINAÇÃO COMPLETA: OK")
           PY
