@@ -4,19 +4,27 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.TextUtils;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.RelativeSizeSpan;
+import android.util.DisplayMetrics;
+import android.util.LruCache;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.BaseAdapter;
 import android.widget.FrameLayout;
+import android.widget.HorizontalScrollView;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -34,19 +42,28 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 
 public class WatchlistActivity extends Activity {
 
     private static final String JSON_URL =
             "https://raw.githubusercontent.com/JOJOMDS11/tv-detox-purple/watchlist-data/public/watchlist.json";
     private static final String CACHE_FILE = "watchlist.json";
-    private static final long MAX_AGE_MS = 60L * 60L * 1000L;
+    private static final long MAX_AGE_MS = 30L * 60L * 1000L;
     private static final String ALL = "Todos";
+    private static final int COLS = 5;
+    private static final int ROWS = 3;
+    private static final int PER_PAGE = COLS * ROWS;
 
     private static final int TEXT = 0xFFFFFFFF;
-    private static final int TEXT_DIM = 0x99FFFFFF;
-    private static final int TEXT_MID = 0xDDFFFFFF;
+    private static final int TEXT_DIM = 0xA6FFFFFF;
+    private static final int GOLD = 0xFFF5C518;
+    private static final int CARD = 0x14FFFFFF;
+    private static final int CARD_ON = 0x3DFFFFFF;
 
     private static final Map<String, String> GENRES_PT = new HashMap<>();
     static {
@@ -82,25 +99,46 @@ public class WatchlistActivity extends Activity {
     private static final class Item {
         String id;
         String title;
+        String poster = "";
         int year;
+        double rating;
         boolean series;
         List<String> genres = new ArrayList<>();
+    }
+
+    private static final class Chip {
+        String genre;
+        TextView view;
+        GradientDrawable bg;
     }
 
     private final List<Item> all = new ArrayList<>();
     private final List<Item> shown = new ArrayList<>();
     private final List<String> genreNames = new ArrayList<>();
     private final Map<String, Integer> genreCounts = new HashMap<>();
+    private final List<Chip> chips = new ArrayList<>();
     private String current = ALL;
     private String lastRaw = "";
+    private int page = 0;
+    private volatile int generation = 0;
+    private int posterW;
 
-    private ListView genreList;
-    private ListView titleList;
+    private final FrameLayout[] cards = new FrameLayout[PER_PAGE];
+    private final ImageView[] posters = new ImageView[PER_PAGE];
+    private final TextView[] titles = new TextView[PER_PAGE];
+    private final TextView[] ratings = new TextView[PER_PAGE];
+    private final TextView[] metas = new TextView[PER_PAGE];
+    private final TextView[] genreViews = new TextView[PER_PAGE];
+
+    private LinearLayout chipRow;
     private TextView headerTitle;
     private TextView headerCount;
+    private TextView pageView;
     private TextView emptyView;
-    private BaseAdapter genreAdapter;
-    private BaseAdapter titleAdapter;
+
+    private LruCache<String, Bitmap> memory;
+    private ExecutorService pool;
+    private File posterDir;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -108,83 +146,166 @@ public class WatchlistActivity extends Activity {
         GradientDrawable bg = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
                 new int[] {0xFF1B0C30, 0xFF0E0719, 0xFF07030F});
         getWindow().setBackgroundDrawable(bg);
+        memory = new LruCache<String, Bitmap>(10 * 1024 * 1024) {
+            @Override
+            protected int sizeOf(String key, Bitmap value) {
+                return value.getByteCount();
+            }
+        };
+        pool = Executors.newFixedThreadPool(3);
+        posterDir = new File(getCacheDir(), "posters");
+        posterDir.mkdirs();
         setContentView(buildLayout());
         loadCache();
         refreshIfStale();
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        pool.shutdownNow();
+        memory.evictAll();
+    }
+
     private View buildLayout() {
-        LinearLayout root = new LinearLayout(this);
-        root.setOrientation(LinearLayout.HORIZONTAL);
-        root.setPadding(dp(56), dp(36), dp(56), dp(28));
+        DisplayMetrics dm = getResources().getDisplayMetrics();
+        int wdp = Math.round(dm.widthPixels / dm.density);
+        int hdp = Math.round(dm.heightPixels / dm.density);
+        int padX = 40;
+        int gap = 12;
+        int cellW = (wdp - 2 * padX - gap * (COLS - 1)) / COLS;
+        int cellH = (hdp - 176) / ROWS;
+        int pw = Math.min((cellH - 16) * 2 / 3, cellW * 52 / 100);
+        posterW = dp(pw);
 
-        genreAdapter = new GenreAdapter();
-        genreList = newList();
-        genreList.setAdapter(genreAdapter);
-        genreList.setOnItemClickListener((parent, view, position, id) -> {
-            if (position < 0 || position >= genreNames.size()) return;
-            current = genreNames.get(position);
-            applyFilter();
-            genreAdapter.notifyDataSetChanged();
-            titleList.requestFocus();
-        });
-        root.addView(genreList, new LinearLayout.LayoutParams(dp(250), ViewGroup.LayoutParams.MATCH_PARENT));
+        FrameLayout root = new FrameLayout(this);
 
-        LinearLayout right = new LinearLayout(this);
-        right.setOrientation(LinearLayout.VERTICAL);
-        LinearLayout.LayoutParams rightLp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f);
-        rightLp.leftMargin = dp(36);
-        root.addView(right, rightLp);
+        LinearLayout main = new LinearLayout(this);
+        main.setOrientation(LinearLayout.VERTICAL);
+        main.setPadding(dp(padX), dp(28), dp(padX), dp(20));
+        root.addView(main, new FrameLayout.LayoutParams(-1, -1));
 
         LinearLayout header = new LinearLayout(this);
         header.setOrientation(LinearLayout.HORIZONTAL);
-        header.setGravity(Gravity.BOTTOM);
-        header.setPadding(dp(16), 0, dp(16), dp(14));
+        header.setGravity(Gravity.CENTER_VERTICAL);
         headerTitle = text(26, TEXT, Typeface.BOLD);
         headerCount = text(18, TEXT_DIM, Typeface.NORMAL);
-        headerCount.setPadding(dp(14), 0, 0, dp(2));
+        headerCount.setPadding(dp(14), dp(4), 0, 0);
+        pageView = text(16, TEXT_DIM, Typeface.NORMAL);
+        View spacer = new View(this);
         header.addView(headerTitle);
         header.addView(headerCount);
-        right.addView(header, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT));
+        header.addView(spacer, new LinearLayout.LayoutParams(0, 1, 1f));
+        header.addView(pageView);
+        main.addView(header, new LinearLayout.LayoutParams(-1, dp(44)));
 
-        FrameLayout body = new FrameLayout(this);
-        titleAdapter = new TitleAdapter();
-        titleList = newList();
-        titleList.setAdapter(titleAdapter);
-        titleList.setOnItemClickListener((parent, view, position, id) -> {
-            if (position >= 0 && position < shown.size()) openInStremio(shown.get(position));
-        });
+        HorizontalScrollView scroll = new HorizontalScrollView(this);
+        scroll.setHorizontalScrollBarEnabled(false);
+        scroll.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        scroll.setClipToPadding(false);
+        chipRow = new LinearLayout(this);
+        chipRow.setOrientation(LinearLayout.HORIZONTAL);
+        chipRow.setPadding(dp(4), dp(4), dp(4), dp(4));
+        scroll.addView(chipRow, new FrameLayout.LayoutParams(-2, -1));
+        LinearLayout.LayoutParams scrollLp = new LinearLayout.LayoutParams(-1, dp(46));
+        scrollLp.topMargin = dp(4);
+        scrollLp.bottomMargin = dp(10);
+        main.addView(scroll, scrollLp);
+
+        LinearLayout grid = new LinearLayout(this);
+        grid.setOrientation(LinearLayout.VERTICAL);
+        for (int r = 0; r < ROWS; r++) {
+            LinearLayout row = new LinearLayout(this);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            for (int c = 0; c < COLS; c++) {
+                FrameLayout card = buildCard(r * COLS + c, pw);
+                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, -1, 1f);
+                if (c > 0) lp.leftMargin = dp(gap);
+                row.addView(card, lp);
+            }
+            LinearLayout.LayoutParams rowLp = new LinearLayout.LayoutParams(-1, 0, 1f);
+            if (r > 0) rowLp.topMargin = dp(gap);
+            grid.addView(row, rowLp);
+        }
+        main.addView(grid, new LinearLayout.LayoutParams(-1, 0, 1f));
+
         emptyView = text(20, TEXT_DIM, Typeface.NORMAL);
         emptyView.setGravity(Gravity.CENTER);
         emptyView.setText("Carregando…");
-        body.addView(titleList, new FrameLayout.LayoutParams(-1, -1));
-        body.addView(emptyView, new FrameLayout.LayoutParams(-1, -1));
-        titleList.setEmptyView(emptyView);
-        right.addView(body, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+        root.addView(emptyView, new FrameLayout.LayoutParams(-1, -1));
 
         updateHeader();
-        titleList.requestFocus();
         return root;
     }
 
-    private ListView newList() {
-        ListView list = new ListView(this);
-        list.setDivider(null);
-        list.setDividerHeight(0);
-        list.setVerticalScrollBarEnabled(false);
-        list.setOverScrollMode(View.OVER_SCROLL_NEVER);
-        list.setSelector(rounded(0x33FFFFFF));
-        list.setDrawSelectorOnTop(false);
-        list.setFocusable(true);
-        list.setItemsCanFocus(false);
-        list.setClipToPadding(false);
-        return list;
+    private FrameLayout buildCard(final int index, int pw) {
+        FrameLayout card = new FrameLayout(this);
+        final GradientDrawable bg = rounded(CARD, 12);
+        card.setBackground(bg);
+        card.setFocusable(true);
+        card.setClickable(true);
+        card.setTag(Integer.valueOf(index));
+        card.setOnFocusChangeListener((v, has) -> {
+            bg.setColor(has ? CARD_ON : CARD);
+            bg.setStroke(has ? dp(2) : 0, 0xFFFFFFFF);
+        });
+        card.setOnClickListener(v -> {
+            int at = page * PER_PAGE + index;
+            if (at < shown.size()) openInStremio(shown.get(at));
+        });
+
+        LinearLayout inner = new LinearLayout(this);
+        inner.setOrientation(LinearLayout.HORIZONTAL);
+        inner.setPadding(dp(8), dp(8), dp(8), dp(8));
+
+        ImageView poster = new ImageView(this);
+        poster.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        poster.setBackground(rounded(0x22FFFFFF, 8));
+        poster.setClipToOutline(true);
+        inner.addView(poster, new LinearLayout.LayoutParams(dp(pw), -1));
+
+        LinearLayout col = new LinearLayout(this);
+        col.setOrientation(LinearLayout.VERTICAL);
+        col.setPadding(dp(10), dp(2), dp(2), 0);
+
+        TextView title = text(14, TEXT, Typeface.BOLD);
+        title.setMaxLines(3);
+        title.setEllipsize(TextUtils.TruncateAt.END);
+        TextView rating = text(14, TEXT, Typeface.BOLD);
+        TextView meta = text(12, TEXT_DIM, Typeface.NORMAL);
+        meta.setSingleLine(true);
+        TextView genre = text(12, TEXT_DIM, Typeface.NORMAL);
+        genre.setMaxLines(2);
+        genre.setEllipsize(TextUtils.TruncateAt.END);
+
+        col.addView(title);
+        LinearLayout.LayoutParams ratingLp = new LinearLayout.LayoutParams(-2, -2);
+        ratingLp.topMargin = dp(8);
+        col.addView(rating, ratingLp);
+        LinearLayout.LayoutParams metaLp = new LinearLayout.LayoutParams(-2, -2);
+        metaLp.topMargin = dp(6);
+        col.addView(meta, metaLp);
+        LinearLayout.LayoutParams genreLp = new LinearLayout.LayoutParams(-2, -2);
+        genreLp.topMargin = dp(4);
+        col.addView(genre, genreLp);
+        inner.addView(col, new LinearLayout.LayoutParams(0, -1, 1f));
+
+        card.addView(inner, new FrameLayout.LayoutParams(-1, -1));
+
+        cards[index] = card;
+        posters[index] = poster;
+        titles[index] = title;
+        ratings[index] = rating;
+        metas[index] = meta;
+        genreViews[index] = genre;
+        card.setVisibility(View.INVISIBLE);
+        card.setFocusable(false);
+        return card;
     }
 
-    private GradientDrawable rounded(int color) {
+    private GradientDrawable rounded(int color, int radiusDp) {
         GradientDrawable d = new GradientDrawable();
-        d.setCornerRadius(dp(10));
+        d.setCornerRadius(dp(radiusDp));
         d.setColor(color);
         return d;
     }
@@ -200,6 +321,53 @@ public class WatchlistActivity extends Activity {
 
     private int dp(int v) {
         return Math.round(v * getResources().getDisplayMetrics().density);
+    }
+
+    private void rebuildChips() {
+        chipRow.removeAllViews();
+        chips.clear();
+        for (String g : genreNames) {
+            final Chip chip = new Chip();
+            chip.genre = g;
+            chip.bg = rounded(CARD, 20);
+            TextView v = text(16, TEXT_DIM, Typeface.NORMAL);
+            Integer n = g.equals(ALL) ? Integer.valueOf(all.size()) : genreCounts.get(g);
+            v.setText(n == null ? g : g + "  " + n);
+            v.setSingleLine(true);
+            v.setGravity(Gravity.CENTER);
+            v.setPadding(dp(18), 0, dp(18), 0);
+            v.setBackground(chip.bg);
+            v.setFocusable(true);
+            v.setClickable(true);
+            v.setTag(chip);
+            v.setOnFocusChangeListener((view, has) -> styleChip(chip, has));
+            v.setOnClickListener(view -> {
+                current = chip.genre;
+                page = 0;
+                refreshChips();
+                filter();
+                render();
+                focusCard(0);
+            });
+            chip.view = v;
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, -1);
+            lp.rightMargin = dp(8);
+            chipRow.addView(v, lp);
+            chips.add(chip);
+        }
+        refreshChips();
+    }
+
+    private void refreshChips() {
+        for (Chip c : chips) styleChip(c, c.view.hasFocus());
+    }
+
+    private void styleChip(Chip c, boolean focused) {
+        boolean active = c.genre.equals(current);
+        c.bg.setColor(focused ? CARD_ON : active ? 0x33FFFFFF : CARD);
+        c.bg.setStroke(focused ? dp(2) : 0, 0xFFFFFFFF);
+        c.view.setTextColor(active || focused ? TEXT : TEXT_DIM);
+        c.view.setTypeface(Typeface.SANS_SERIF, active ? Typeface.BOLD : Typeface.NORMAL);
     }
 
     private void loadCache() {
@@ -218,7 +386,7 @@ public class WatchlistActivity extends Activity {
     private void refreshIfStale() {
         File f = new File(getFilesDir(), CACHE_FILE);
         if (f.exists() && !all.isEmpty() && System.currentTimeMillis() - f.lastModified() < MAX_AGE_MS) return;
-        new Thread(() -> {
+        pool.execute(() -> {
             try {
                 HttpURLConnection c = (HttpURLConnection) new URL(JSON_URL).openConnection();
                 c.setConnectTimeout(10000);
@@ -240,7 +408,7 @@ public class WatchlistActivity extends Activity {
                     if (!isFinishing() && all.isEmpty()) emptyView.setText("Não foi possível carregar a lista");
                 });
             }
-        }).start();
+        });
     }
 
     private static String readAll(InputStream in) throws Exception {
@@ -264,6 +432,10 @@ public class WatchlistActivity extends Activity {
             it.id = o.optString("id");
             it.title = o.optString("title");
             it.year = o.optInt("year", 0);
+            it.rating = o.optDouble("rating", 0);
+            if (Double.isNaN(it.rating)) it.rating = 0;
+            String poster = o.optString("poster");
+            it.poster = poster.equals("null") ? "" : poster;
             String type = o.optString("type");
             it.series = type.equals("tvSeries") || type.equals("tvMiniSeries");
             JSONArray g = o.optJSONArray("genres");
@@ -297,21 +469,240 @@ public class WatchlistActivity extends Activity {
         genreNames.add(ALL);
         genreNames.addAll(names);
         if (!genreNames.contains(current)) current = ALL;
-        genreAdapter.notifyDataSetChanged();
-        applyFilter();
+        rebuildChips();
+        filter();
+        render();
+        if (getCurrentFocus() == null) focusCard(0);
     }
 
-    private void applyFilter() {
+    private void filter() {
         shown.clear();
         for (Item it : all) if (current.equals(ALL) || it.genres.contains(current)) shown.add(it);
-        titleAdapter.notifyDataSetChanged();
-        titleList.setSelection(0);
+        int pages = pageCount();
+        if (page >= pages) page = pages - 1;
+        if (page < 0) page = 0;
+    }
+
+    private int pageCount() {
+        return Math.max(1, (shown.size() + PER_PAGE - 1) / PER_PAGE);
+    }
+
+    private void render() {
+        int start = page * PER_PAGE;
+        int gen = ++generation;
+        for (int i = 0; i < PER_PAGE; i++) {
+            int at = start + i;
+            if (at < shown.size()) {
+                Item it = shown.get(at);
+                cards[i].setVisibility(View.VISIBLE);
+                cards[i].setFocusable(true);
+                titles[i].setText(it.title);
+                bindRating(ratings[i], it);
+                String meta = it.year > 0 ? String.valueOf(it.year) : "";
+                if (it.series) meta = meta.isEmpty() ? "Série" : "Série · " + meta;
+                metas[i].setText(meta);
+                genreViews[i].setText(joinGenres(it));
+                bindPoster(posters[i], it, gen);
+            } else {
+                cards[i].setVisibility(View.INVISIBLE);
+                cards[i].setFocusable(false);
+                posters[i].setTag(null);
+                posters[i].setImageDrawable(null);
+            }
+        }
+        pageView.setText(shown.isEmpty() ? "" : (page + 1) + " / " + pageCount());
+        emptyView.setVisibility(shown.isEmpty() ? View.VISIBLE : View.GONE);
+        if (shown.isEmpty() && !all.isEmpty()) emptyView.setText("Nenhum título neste gênero");
         updateHeader();
+    }
+
+    private void bindRating(TextView view, Item it) {
+        if (it.rating <= 0) {
+            view.setVisibility(View.GONE);
+            return;
+        }
+        view.setVisibility(View.VISIBLE);
+        String label = "IMDb ";
+        String value = String.format(Locale.US, "%.1f", it.rating);
+        SpannableStringBuilder sb = new SpannableStringBuilder(label + value);
+        sb.setSpan(new ForegroundColorSpan(TEXT_DIM), 0, label.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        sb.setSpan(new RelativeSizeSpan(0.8f), 0, label.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        sb.setSpan(new ForegroundColorSpan(GOLD), label.length(), sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        view.setText(sb);
+    }
+
+    private static String joinGenres(Item it) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < it.genres.size() && i < 3; i++) {
+            if (i > 0) sb.append(" · ");
+            sb.append(it.genres.get(i));
+        }
+        return sb.toString();
     }
 
     private void updateHeader() {
         headerTitle.setText(current.equals(ALL) ? "Watchlist" : current);
         headerCount.setText(all.isEmpty() ? "" : String.valueOf(shown.size()));
+    }
+
+    private void bindPoster(final ImageView view, final Item it, final int gen) {
+        view.setTag(it.id);
+        Bitmap cached = memory.get(it.id);
+        if (cached != null) {
+            view.setImageBitmap(cached);
+            return;
+        }
+        view.setImageDrawable(null);
+        if (it.poster.isEmpty()) return;
+        try {
+            pool.execute(() -> {
+                if (gen != generation) return;
+                final Bitmap b = loadPoster(it);
+                if (b == null) return;
+                memory.put(it.id, b);
+                runOnUiThread(() -> {
+                    if (it.id.equals(view.getTag())) view.setImageBitmap(b);
+                });
+            });
+        } catch (RejectedExecutionException ignored) {}
+    }
+
+    private Bitmap loadPoster(Item it) {
+        File f = new File(posterDir, it.id + ".jpg");
+        if (!f.exists() || f.length() == 0) {
+            byte[] data = download(sized(it.poster));
+            if (data == null) data = download(it.poster);
+            if (data == null) return null;
+            try {
+                FileOutputStream out = new FileOutputStream(f);
+                out.write(data);
+                out.close();
+            } catch (Exception e) {
+                return null;
+            }
+        }
+        Bitmap b = decode(f);
+        if (b == null) f.delete();
+        return b;
+    }
+
+    private Bitmap decode(File f) {
+        BitmapFactory.Options o = new BitmapFactory.Options();
+        o.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(f.getAbsolutePath(), o);
+        int sample = 1;
+        while (o.outWidth / (sample * 2) >= posterW) sample *= 2;
+        o.inJustDecodeBounds = false;
+        o.inSampleSize = sample;
+        o.inPreferredConfig = Bitmap.Config.RGB_565;
+        return BitmapFactory.decodeFile(f.getAbsolutePath(), o);
+    }
+
+    private static String sized(String url) {
+        int i = url.indexOf("._V1_");
+        int dot = url.lastIndexOf('.');
+        if (i < 0 || dot <= i) return url;
+        return url.substring(0, i) + "._V1_QL75_UX260_" + url.substring(dot);
+    }
+
+    private static byte[] download(String url) {
+        HttpURLConnection c = null;
+        try {
+            c = (HttpURLConnection) new URL(url).openConnection();
+            c.setConnectTimeout(8000);
+            c.setReadTimeout(12000);
+            if (c.getResponseCode() != 200) return null;
+            InputStream in = c.getInputStream();
+            ByteArrayOutputStream out = new ByteArrayOutputStream(32768);
+            byte[] buf = new byte[8192];
+            int n;
+            int total = 0;
+            while ((n = in.read(buf)) > 0) {
+                total += n;
+                if (total > 2000000) return null;
+                out.write(buf, 0, n);
+            }
+            in.close();
+            return out.toByteArray();
+        } catch (Exception e) {
+            return null;
+        } finally {
+            if (c != null) c.disconnect();
+        }
+    }
+
+    private void focusCard(int i) {
+        if (i >= 0 && i < PER_PAGE && cards[i].getVisibility() == View.VISIBLE) cards[i].requestFocus();
+    }
+
+    private void focusChip() {
+        for (Chip c : chips) if (c.genre.equals(current)) {
+            c.view.requestFocus();
+            return;
+        }
+    }
+
+    private void goToPage(int target, int row, boolean lastColumn) {
+        page = target;
+        render();
+        int onPage = Math.min(PER_PAGE, shown.size() - page * PER_PAGE);
+        int rowsOnPage = (onPage + COLS - 1) / COLS;
+        int r = Math.min(row, rowsOnPage - 1);
+        int idx = r * COLS + (lastColumn ? COLS - 1 : 0);
+        focusCard(Math.min(idx, onPage - 1));
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        View f = getCurrentFocus();
+        int idx = f != null && f.getTag() instanceof Integer ? (Integer) f.getTag() : -1;
+        boolean onChip = f != null && f.getTag() instanceof Chip;
+        boolean hasNext = (page + 1) * PER_PAGE < shown.size();
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_DPAD_RIGHT:
+                if (idx >= 0 && idx % COLS == COLS - 1) {
+                    if (hasNext) goToPage(page + 1, idx / COLS, false);
+                    return true;
+                }
+                break;
+            case KeyEvent.KEYCODE_DPAD_LEFT:
+                if (idx >= 0 && idx % COLS == 0) {
+                    if (page > 0) goToPage(page - 1, idx / COLS, true);
+                    return true;
+                }
+                break;
+            case KeyEvent.KEYCODE_DPAD_UP:
+                if (idx >= 0 && idx < COLS) {
+                    focusChip();
+                    return true;
+                }
+                if (onChip) return true;
+                break;
+            case KeyEvent.KEYCODE_DPAD_DOWN:
+                if (onChip) {
+                    focusCard(0);
+                    return true;
+                }
+                break;
+            case KeyEvent.KEYCODE_CHANNEL_DOWN:
+            case KeyEvent.KEYCODE_PAGE_DOWN:
+            case KeyEvent.KEYCODE_MEDIA_NEXT:
+            case KeyEvent.KEYCODE_MEDIA_FAST_FORWARD:
+                if (hasNext) goToPage(page + 1, 0, false);
+                return true;
+            case KeyEvent.KEYCODE_CHANNEL_UP:
+            case KeyEvent.KEYCODE_PAGE_UP:
+            case KeyEvent.KEYCODE_MEDIA_PREVIOUS:
+            case KeyEvent.KEYCODE_MEDIA_REWIND:
+                if (page > 0) goToPage(page - 1, 0, false);
+                return true;
+            case KeyEvent.KEYCODE_MENU:
+                focusChip();
+                return true;
+            default:
+                break;
+        }
+        return super.onKeyDown(keyCode, event);
     }
 
     private void openInStremio(Item it) {
@@ -349,80 +740,5 @@ public class WatchlistActivity extends Activity {
             }
         }
         return null;
-    }
-
-    private final class GenreAdapter extends BaseAdapter {
-        @Override public int getCount() { return genreNames.size(); }
-        @Override public Object getItem(int position) { return genreNames.get(position); }
-        @Override public long getItemId(int position) { return position; }
-
-        @Override
-        public View getView(int position, View convertView, ViewGroup parent) {
-            LinearLayout row;
-            TextView name;
-            TextView count;
-            if (convertView == null) {
-                row = new LinearLayout(WatchlistActivity.this);
-                row.setOrientation(LinearLayout.HORIZONTAL);
-                row.setGravity(Gravity.CENTER_VERTICAL);
-                row.setPadding(dp(16), dp(11), dp(16), dp(11));
-                name = text(19, TEXT_DIM, Typeface.NORMAL);
-                name.setSingleLine(true);
-                name.setEllipsize(TextUtils.TruncateAt.END);
-                count = text(15, TEXT_DIM, Typeface.NORMAL);
-                row.addView(name, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-                row.addView(count, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
-                        ViewGroup.LayoutParams.WRAP_CONTENT));
-                row.setTag(new TextView[] {name, count});
-            } else {
-                row = (LinearLayout) convertView;
-            }
-            TextView[] views = (TextView[]) row.getTag();
-            String g = genreNames.get(position);
-            boolean active = g.equals(current);
-            views[0].setText(g);
-            views[0].setTextColor(active ? TEXT : TEXT_DIM);
-            views[0].setTypeface(Typeface.SANS_SERIF, active ? Typeface.BOLD : Typeface.NORMAL);
-            Integer n = g.equals(ALL) ? Integer.valueOf(all.size()) : genreCounts.get(g);
-            views[1].setText(n == null ? "" : String.valueOf(n));
-            return row;
-        }
-    }
-
-    private final class TitleAdapter extends BaseAdapter {
-        @Override public int getCount() { return shown.size(); }
-        @Override public Object getItem(int position) { return shown.get(position); }
-        @Override public long getItemId(int position) { return position; }
-
-        @Override
-        public View getView(int position, View convertView, ViewGroup parent) {
-            LinearLayout row;
-            if (convertView == null) {
-                row = new LinearLayout(WatchlistActivity.this);
-                row.setOrientation(LinearLayout.HORIZONTAL);
-                row.setGravity(Gravity.CENTER_VERTICAL);
-                row.setPadding(dp(16), dp(11), dp(16), dp(11));
-                TextView title = text(21, TEXT, Typeface.NORMAL);
-                title.setSingleLine(true);
-                title.setEllipsize(TextUtils.TruncateAt.END);
-                TextView meta = text(16, TEXT_DIM, Typeface.NORMAL);
-                meta.setSingleLine(true);
-                LinearLayout.LayoutParams metaLp = new LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-                metaLp.leftMargin = dp(20);
-                row.addView(title, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-                row.addView(meta, metaLp);
-                row.setTag(new TextView[] {title, meta});
-            } else {
-                row = (LinearLayout) convertView;
-            }
-            TextView[] views = (TextView[]) row.getTag();
-            Item it = shown.get(position);
-            views[0].setText(it.title);
-            String meta = it.year > 0 ? String.valueOf(it.year) : "";
-            if (it.series) meta = meta.isEmpty() ? "Série" : "Série · " + meta;
-            views[1].setText(meta);
-            return row;
-        }
     }
 }
