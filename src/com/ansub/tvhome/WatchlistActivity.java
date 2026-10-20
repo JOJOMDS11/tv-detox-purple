@@ -961,8 +961,8 @@ public class WatchlistActivity extends Activity {
 
     private void refreshIfStale() {
         File f = new File(getFilesDir(), CACHE_FILE);
-        // Cache antigo sem gênero/nota (JSON de antes da atualização) é refeito na hora, sem esperar os 30 min.
-        if (f.exists() && !all.isEmpty() && hasMeta() && lastRaw.contains("\"topMovies\"")
+        // Cache antigo sem gênero/nota/sinopse (JSON de antes da atualização) é refeito na hora, sem esperar os 30 min.
+        if (f.exists() && !all.isEmpty() && hasMeta() && lastRaw.contains("\"topMovies\"") && lastRaw.contains("\"plot\"")
                 && System.currentTimeMillis() - f.lastModified() < MAX_AGE_MS) return;
         pool.execute(() -> {
             try {
@@ -1472,7 +1472,6 @@ public class WatchlistActivity extends Activity {
             openInStremio(it);
         });
         buttons.addView(open);
-        buttons.addView(detailButton("Abrir UniTV", () -> openUniTv(it)), buttonLp());
         buttons.addView(detailButton("Trailer", () -> openTrailer(it)), buttonLp());
         buttons.addView(detailButton("Fechar", dialog::dismiss), buttonLp());
 
@@ -1513,23 +1512,6 @@ public class WatchlistActivity extends Activity {
         });
         b.setOnClickListener(v -> action.run());
         return b;
-    }
-
-    // O UniTV só pesquisa por nome: abre o app e mostra o título para digitar/ditar lá.
-    private void openUniTv(Item it) {
-        Intent launch = getPackageManager().getLaunchIntentForPackage("com.global.unitviptv");
-        if (launch == null) launch = getPackageManager().getLeanbackLaunchIntentForPackage("com.global.unitviptv");
-        if (launch == null) {
-            Toast.makeText(this, "UniTV não encontrado nesta TV", Toast.LENGTH_LONG).show();
-            return;
-        }
-        launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        try {
-            startActivity(launch);
-            Toast.makeText(this, "Pesquise: " + it.title, Toast.LENGTH_LONG).show();
-        } catch (Exception e) {
-            Toast.makeText(this, "Não consegui abrir o UniTV", Toast.LENGTH_LONG).show();
-        }
     }
 
     // Abre o app do YouTube da TV numa busca pelo trailer (sem tocar vídeo dentro do app).
