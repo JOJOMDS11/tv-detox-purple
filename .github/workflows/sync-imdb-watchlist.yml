@@ -19,15 +19,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Load previous JSON
+        run: |
+          git fetch origin watchlist-data || true
+          git show origin/watchlist-data:public/watchlist.json > /tmp/prev.json 2>/dev/null || echo '{}' > /tmp/prev.json
+
       - name: Fetch complete IMDb Watchlist
         env:
           PYTHONUNBUFFERED: "1"
         run: |
           python - <<'PY'
+          import calendar
           import json
           import os
           import urllib.request
-          from datetime import datetime, timezone
+          from datetime import date, datetime, timezone
 
           endpoint = "https://api.graphql.imdb.com/"
           headers = {
@@ -62,6 +68,16 @@ jobs:
               ["ratingsSummary { aggregateRating }"],
               ["metacritic { metascore { score } }"],
               ["genres { genres { text } }", "titleGenres { genres { genre { text } } }"],
+              ["runtime { seconds }"],
+              ["releaseDate { year month day }"],
+          ]
+
+          # Mesmas listas das páginas moviemeter e tvmeter do IMDb (mais populares da semana).
+          CHARTS = {"topMovies": "MOST_POPULAR_MOVIES", "topSeries": "MOST_POPULAR_TV_SHOWS"}
+          TOP_FIELDS = "id titleText { text } primaryImage { url } releaseYear { year } __EXTRA__"
+          TOP_TEMPLATES = [
+              "query { chartTitles(first: 10, chart: { chartType: __CHART__ }) { edges { node { " + TOP_FIELDS + " } } } }",
+              "query { chartTitles(first: 10, chart: { chartType: __CHART__ }) { edges { node { title { " + TOP_FIELDS + " } } } } }",
           ]
 
 
@@ -88,6 +104,76 @@ jobs:
               return names
 
 
+          def release_text(item):
+              release = item.get("releaseDate") or {}
+              y, m, d = release.get("year"), release.get("month"), release.get("day")
+              if not y:
+                  return ""
+              if m and d:
+                  return f"{y:04d}-{m:02d}-{d:02d}"
+              if m:
+                  return f"{y:04d}-{m:02d}"
+              return f"{y:04d}"
+
+
+          def is_upcoming(release, year):
+              today = datetime.now(timezone.utc).date()
+              if release:
+                  parts = [int(p) for p in release.split("-")]
+                  if len(parts) == 3:
+                      return date(parts[0], parts[1], parts[2]) > today
+                  if len(parts) == 2:
+                      return date(parts[0], parts[1], calendar.monthrange(parts[0], parts[1])[1]) >= today
+                  return date(parts[0], 12, 31) >= today
+              return bool(year) and year > today.year
+
+
+          def make_title(item, imdb_id):
+              title_text = item.get("titleText") or {}
+              image = item.get("primaryImage") or {}
+              year = (item.get("releaseYear") or {}).get("year")
+              kind = item.get("titleType") or {}
+              rating = (item.get("ratingsSummary") or {}).get("aggregateRating") or 0
+              metascore = ((item.get("metacritic") or {}).get("metascore") or {}).get("score") or 0
+              runtime = ((item.get("runtime") or {}).get("seconds") or 0) // 60
+              release = release_text(item)
+              return {
+                  "id": imdb_id,
+                  "title": title_text.get("text") or "",
+                  "year": year,
+                  "type": kind.get("id") or "",
+                  "rating": rating,
+                  "metascore": metascore,
+                  "runtime": runtime,
+                  "release": release,
+                  "upcoming": is_upcoming(release, year),
+                  "genres": extract_genres(item),
+                  "poster": image.get("url") or "",
+                  "imdbUrl": "https://www.imdb.com/title/" + imdb_id + "/",
+              }
+
+
+          def fetch_top(extra, chart):
+              for template in TOP_TEMPLATES:
+                  for fields in (extra, ""):
+                      try:
+                          data = query(template.replace("__CHART__", chart).replace("__EXTRA__", fields), {})
+                          edges = (data.get("chartTitles") or {}).get("edges") or []
+                          items = []
+                          for edge in edges:
+                              node = (edge or {}).get("node") or {}
+                              item = node.get("title") or node
+                              if item.get("id"):
+                                  items.append(make_title(item, item["id"]))
+                          if items:
+                              print("Top 10 " + chart + " obtido com: " + template[:48] + " | campos extras: " + ("sim" if fields else "não"))
+                              return items[:10]
+                          print("Top 10 " + chart + " vazio com: " + template[:48])
+                      except Exception as error:
+                          print("Top 10 " + chart + " falhou: " + str(error)[:160])
+              return []
+
+
           def fetch_all(gql, user_id):
               titles = []
               seen = set()
@@ -107,23 +193,7 @@ jobs:
                       if not imdb_id or imdb_id in seen:
                           continue
                       seen.add(imdb_id)
-                      title_text = item.get("titleText") or {}
-                      image = item.get("primaryImage") or {}
-                      year = item.get("releaseYear") or {}
-                      kind = item.get("titleType") or {}
-                      rating = (item.get("ratingsSummary") or {}).get("aggregateRating") or 0
-                      metascore = ((item.get("metacritic") or {}).get("metascore") or {}).get("score") or 0
-                      titles.append({
-                          "id": imdb_id,
-                          "title": title_text.get("text") or "",
-                          "year": year.get("year"),
-                          "type": kind.get("id") or "",
-                          "rating": rating,
-                          "metascore": metascore,
-                          "genres": extract_genres(item),
-                          "poster": image.get("url") or "",
-                          "imdbUrl": "https://www.imdb.com/title/" + imdb_id + "/",
-                      })
+                      titles.append(make_title(item, imdb_id))
                   print(f"Página {page}: {len(edges)} itens; {len(titles)} títulos únicos.")
                   info = connection["pageInfo"]
                   if not info["hasNextPage"]:
@@ -167,6 +237,33 @@ jobs:
               if not titles:
                   raise RuntimeError("A IMDb não retornou títulos: " + str(last_error))
 
+              stamp = int(datetime.now(timezone.utc).timestamp())
+              previous = {}
+              previous_top = {}
+              try:
+                  with open("/tmp/prev.json", encoding="utf-8") as file:
+                      old_data = json.load(file)
+                  previous = {t["id"]: t for t in old_data.get("titles") or [] if t.get("id")}
+                  previous_top = {k: old_data.get(k) or [] for k in CHARTS}
+              except Exception as error:
+                  print("JSON anterior indisponível: " + str(error)[:120])
+              for t in titles:
+                  old = previous.get(t["id"])
+                  if old is not None:
+                      t["addedAt"] = old.get("addedAt") or 0
+                  else:
+                      t["addedAt"] = stamp if previous else 0
+              new_count = sum(1 for t in titles if t["addedAt"] == stamp)
+              soon_count = sum(1 for t in titles if t["upcoming"])
+              print(f"{new_count} títulos novos na lista; {soon_count} ainda não lançados; {sum(1 for t in titles if t['runtime'])} com duração.")
+
+              tops = {}
+              for key, chart in CHARTS.items():
+                  tops[key] = fetch_top(" ".join(chosen), chart)
+                  if not tops[key]:
+                      tops[key] = previous_top.get(key) or []
+                      print("Top 10 " + key + " indisponível; mantido o anterior (" + str(len(tops[key])) + " itens).")
+
               with_genres = sum(1 for t in titles if t["genres"])
               with_rating = sum(1 for t in titles if t["rating"])
               with_meta = sum(1 for t in titles if t["metascore"])
@@ -177,6 +274,8 @@ jobs:
                   "profileId": profile_id,
                   "updatedAt": datetime.now(timezone.utc).isoformat(),
                   "count": len(titles),
+                  "topMovies": tops["topMovies"],
+                  "topSeries": tops["topSeries"],
                   "titles": titles,
               }
 

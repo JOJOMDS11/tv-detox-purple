@@ -1,6 +1,7 @@
 package com.ansub.tvhome;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
@@ -16,6 +17,7 @@ import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.text.InputType;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
@@ -27,6 +29,9 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.WindowManager;
+import android.view.inputmethod.EditorInfo;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -44,12 +49,16 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -76,6 +85,8 @@ public class WatchlistActivity extends Activity {
     private static final int MENU_FOCUS = 0xFFC9BDEB;
     private static final int MENU_SELECTED = 0xFFDCD3F2;
     private static final double[] MIN_RATINGS = {6.0, 7.0, 8.0};
+    private static final long NEW_MS = 14L * 24L * 3600L * 1000L;
+    private static final int M_ALL = 0, M_NEW = 1, M_SOON = 2, M_TOPM = 3, M_TOPS = 4;
 
     private static final Map<String, String> GENRES_PT = new HashMap<>();
     static {
@@ -117,13 +128,20 @@ public class WatchlistActivity extends Activity {
         int meta;
         boolean series;
         int kind; // 1 filme, 2 filme pra TV, 3 série, 0 outros
+        int runtime;
+        String release = "";
+        boolean upcoming;
+        long addedAt;
+        String norm = "";
         List<String> genres = new ArrayList<>();
     }
 
-    private static final int T_ALL = -1, T_GENRE = 0, T_YEAR = 1, T_KIND = 2, T_SORT = 3, T_MORE = 4;
+    private static final int T_ALL = -1, T_GENRE = 0, T_YEAR = 1, T_KIND = 2, T_SORT = 3, T_MORE = 4, T_DUR = 5;
+    private static final int T_NEW = 10, T_SOON = 11, T_TOPM = 13, T_RANDOM = 14, T_SEARCH = 15, T_TOPS = 16;
 
     private static final class Drop {
         int type;
+        int row;
         TextView view;
         GradientDrawable bg;
     }
@@ -132,6 +150,7 @@ public class WatchlistActivity extends Activity {
         String label;
         int count = -1;
         boolean selected;
+        boolean keepOpen;
         Runnable apply;
     }
 
@@ -188,7 +207,16 @@ public class WatchlistActivity extends Activity {
     private final List<String> genreNames = new ArrayList<>();
     private final Map<String, Integer> genreCounts = new HashMap<>();
     private final List<Drop> bar = new ArrayList<>();
-    private String current = ALL;
+    private final Set<String> selGenres = new LinkedHashSet<>();
+    private final List<Item> topMovies = new ArrayList<>();
+    private final List<Item> topSeries = new ArrayList<>();
+    private int mode = M_ALL;
+    private int currentDur = 0;
+    private String query = "";
+    private String[] queryTokens = new String[0];
+    private final Random random = new Random();
+    private Drop searchDrop;
+    private LinearLayout tabBar;
     private int currentDecade = -1;
     private int currentKind = 0;
     private int currentSort = 0;
@@ -212,6 +240,8 @@ public class WatchlistActivity extends Activity {
     private final TextView[] titles = new TextView[PER_PAGE];
     private final TextView[] ratings = new TextView[PER_PAGE];
     private final TextView[] metaViews = new TextView[PER_PAGE];
+    private final TextView[] tagViews = new TextView[PER_PAGE];
+    private final GradientDrawable[] tagBgs = new GradientDrawable[PER_PAGE];
     private final GradientDrawable[] metaBgs = new GradientDrawable[PER_PAGE];
     private final TextView[] metas = new TextView[PER_PAGE];
     private final TextView[] genreViews = new TextView[PER_PAGE];
@@ -259,7 +289,7 @@ public class WatchlistActivity extends Activity {
         int padX = 40;
         int gap = 12;
         int cellW = (wdp - 2 * padX - gap * (COLS - 1)) / COLS;
-        int cellH = (hdp - 172) / ROWS;
+        int cellH = (hdp - 210) / ROWS;
         int pw = Math.min((cellH - 16) * 2 / 3, cellW * 52 / 100);
         posterW = dp(pw);
 
@@ -284,19 +314,34 @@ public class WatchlistActivity extends Activity {
         header.addView(pageView);
         main.addView(header, new LinearLayout.LayoutParams(-1, dp(40)));
 
+        tabBar = new LinearLayout(this);
+        tabBar.setOrientation(LinearLayout.HORIZONTAL);
+        tabBar.setGravity(Gravity.CENTER_VERTICAL);
+        tabBar.setPadding(dp(4), dp(3), dp(4), dp(3));
+        addDrop(T_ALL, tabBar, 0);
+        addDrop(T_NEW, tabBar, 0);
+        addDrop(T_SOON, tabBar, 0);
+        addDrop(T_TOPM, tabBar, 0);
+        addDrop(T_TOPS, tabBar, 0);
+        tabBar.addView(new View(this), new LinearLayout.LayoutParams(0, 1, 1f));
+        addDrop(T_RANDOM, tabBar, 0);
+        addDrop(T_SEARCH, tabBar, 0);
+        LinearLayout.LayoutParams tabLp = new LinearLayout.LayoutParams(-1, dp(44));
+        tabLp.topMargin = dp(2);
+        main.addView(tabBar, tabLp);
+
         filterBar = new LinearLayout(this);
         filterBar.setOrientation(LinearLayout.HORIZONTAL);
         filterBar.setGravity(Gravity.CENTER_VERTICAL);
-        filterBar.setPadding(dp(4), dp(4), dp(4), dp(4));
-        addDrop(T_ALL);
-        addDrop(T_GENRE);
-        addDrop(T_YEAR);
-        addDrop(T_KIND);
-        addDrop(T_SORT);
-        addDrop(T_MORE);
-        LinearLayout.LayoutParams barLp = new LinearLayout.LayoutParams(-1, dp(46));
-        barLp.topMargin = dp(4);
-        barLp.bottomMargin = dp(12);
+        filterBar.setPadding(dp(4), dp(3), dp(4), dp(3));
+        addDrop(T_GENRE, filterBar, 1);
+        addDrop(T_YEAR, filterBar, 1);
+        addDrop(T_KIND, filterBar, 1);
+        addDrop(T_DUR, filterBar, 1);
+        addDrop(T_SORT, filterBar, 1);
+        addDrop(T_MORE, filterBar, 1);
+        LinearLayout.LayoutParams barLp = new LinearLayout.LayoutParams(-1, dp(44));
+        barLp.bottomMargin = dp(8);
         main.addView(filterBar, barLp);
 
         LinearLayout grid = new LinearLayout(this);
@@ -361,6 +406,16 @@ public class WatchlistActivity extends Activity {
         FrameLayout.LayoutParams badgeLp = new FrameLayout.LayoutParams(-2, -2, Gravity.START | Gravity.TOP);
         badgeLp.setMargins(dp(3), dp(3), 0, 0);
         posterBox.addView(metaView, badgeLp);
+        TextView tagView = text(9, TEXT, Typeface.BOLD);
+        GradientDrawable tagBg = rounded(0xFF7E57C2, 4);
+        tagView.setBackground(tagBg);
+        tagView.setGravity(Gravity.CENTER);
+        tagView.setSingleLine(true);
+        tagView.setPadding(dp(3), dp(1), dp(3), dp(1));
+        tagView.setVisibility(View.GONE);
+        FrameLayout.LayoutParams tagLp = new FrameLayout.LayoutParams(-2, -2, Gravity.START | Gravity.BOTTOM);
+        tagLp.setMargins(dp(3), 0, 0, dp(3));
+        posterBox.addView(tagView, tagLp);
         inner.addView(posterBox, new LinearLayout.LayoutParams(dp(pw), -1));
 
         LinearLayout col = new LinearLayout(this);
@@ -395,6 +450,8 @@ public class WatchlistActivity extends Activity {
         posters[index] = poster;
         metaViews[index] = metaView;
         metaBgs[index] = metaBg;
+        tagViews[index] = tagView;
+        tagBgs[index] = tagBg;
         titles[index] = title;
         ratings[index] = rating;
         metas[index] = meta;
@@ -424,19 +481,20 @@ public class WatchlistActivity extends Activity {
         return Math.round(v * getResources().getDisplayMetrics().density);
     }
 
-    private void addDrop(int type) {
+    private void addDrop(int type, LinearLayout row, int rowIndex) {
         final Drop d = new Drop();
         d.type = type;
+        d.row = rowIndex;
         d.bg = rounded(CARD, 20);
-        TextView v = text(16, TEXT_DIM, Typeface.NORMAL);
+        TextView v = text(15, TEXT_DIM, Typeface.NORMAL);
         v.setSingleLine(true);
         v.setGravity(Gravity.CENTER);
-        v.setPadding(dp(18), 0, dp(18), 0);
+        v.setPadding(dp(16), 0, dp(16), 0);
         v.setBackground(d.bg);
         v.setFocusable(true);
         v.setClickable(true);
         v.setTag(d);
-        if (type != T_ALL) {
+        if (type >= T_GENRE && type <= T_DUR) {
             Chevron chevron = new Chevron(dp(14), 0xCCFFFFFF);
             chevron.setBounds(0, 0, dp(14), dp(14));
             v.setCompoundDrawables(null, null, chevron, null);
@@ -446,27 +504,59 @@ public class WatchlistActivity extends Activity {
             if (has) lastBar = bar.indexOf(d);
             styleDrop(d, has);
         });
-        v.setOnClickListener(view -> {
-            if (d.type == T_ALL) {
-                clearFilters();
-                applyChange(null);
-            } else {
-                openMenu(d);
-            }
-        });
+        v.setOnClickListener(view -> onBarClick(d));
         d.view = v;
+        if (type == T_SEARCH) searchDrop = d;
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, -1);
         lp.rightMargin = dp(10);
-        filterBar.addView(v, lp);
+        row.addView(v, lp);
         bar.add(d);
     }
 
+    private void onBarClick(Drop d) {
+        switch (d.type) {
+            case T_ALL:
+                clearFilters();
+                applyChange(null);
+                break;
+            case T_NEW:
+                toggleMode(M_NEW, d);
+                break;
+            case T_SOON:
+                toggleMode(M_SOON, d);
+                break;
+            case T_TOPM:
+                toggleMode(M_TOPM, d);
+                break;
+            case T_TOPS:
+                toggleMode(M_TOPS, d);
+                break;
+            case T_RANDOM:
+                pickRandom();
+                break;
+            case T_SEARCH:
+                openSearch();
+                break;
+            default:
+                openMenu(d);
+        }
+    }
+
+    private void toggleMode(int target, Drop d) {
+        mode = mode == target ? M_ALL : target;
+        applyChange(d);
+    }
+
     private void clearFilters() {
-        current = ALL;
+        selGenres.clear();
         currentDecade = -1;
         currentKind = 0;
         currentSort = 0;
         minRating = 0;
+        currentDur = 0;
+        query = "";
+        queryTokens = new String[0];
+        mode = M_ALL;
     }
 
     private void applyChange(Drop focusOn) {
@@ -478,25 +568,48 @@ public class WatchlistActivity extends Activity {
         else focusCard(0);
     }
 
+    private boolean isDefault() {
+        return mode == M_ALL && selGenres.isEmpty() && currentDecade == -1 && currentKind == 0
+                && currentSort == 0 && minRating <= 0 && currentDur == 0 && query.isEmpty();
+    }
+
     private boolean isActive(Drop d) {
         switch (d.type) {
-            case T_GENRE: return !current.equals(ALL);
+            case T_GENRE: return !selGenres.isEmpty();
             case T_YEAR: return currentDecade != -1;
             case T_KIND: return currentKind != 0;
             case T_SORT: return currentSort != 0;
             case T_MORE: return minRating > 0;
-            default: return current.equals(ALL) && currentDecade == -1 && currentKind == 0
-                    && currentSort == 0 && minRating <= 0;
+            case T_DUR: return currentDur != 0;
+            case T_NEW: return mode == M_NEW;
+            case T_SOON: return mode == M_SOON;
+            case T_TOPM: return mode == M_TOPM;
+            case T_TOPS: return mode == M_TOPS;
+            case T_SEARCH: return !query.isEmpty();
+            case T_RANDOM: return false;
+            default: return isDefault();
         }
     }
 
     private String dropLabel(Drop d) {
         switch (d.type) {
-            case T_GENRE: return current.equals(ALL) ? "Gêneros" : current;
+            case T_GENRE:
+                if (selGenres.isEmpty()) return "Gêneros";
+                String first = selGenres.iterator().next();
+                return selGenres.size() == 1 ? first : first + " +" + (selGenres.size() - 1);
             case T_YEAR: return currentDecade == -1 ? "Anos" : decadeLabel(currentDecade);
             case T_KIND: return currentKind == 0 ? "Tipos" : kindLabel(currentKind);
+            case T_DUR: return currentDur == 0 ? "Duração" : durLabel(currentDur);
             case T_SORT: return currentSort == 1 ? "Maior nota IMDb" : currentSort == 2 ? "Maior Metascore" : "Ordem";
             case T_MORE: return minRating > 0 ? ratingLabel(minRating) : "Mais";
+            case T_NEW: return "Novos " + countNew();
+            case T_SOON: return "Em breve " + countSoon();
+            case T_TOPM: return "Top 10 Filmes";
+            case T_TOPS: return "Top 10 Séries";
+            case T_RANDOM: return "Sortear";
+            case T_SEARCH:
+                if (query.isEmpty()) return "Buscar";
+                return query.length() > 14 ? "“" + query.substring(0, 14) + "…”" : "“" + query + "”";
             default: return all.isEmpty() ? "Todos" : "Todos  " + all.size();
         }
     }
@@ -505,11 +618,67 @@ public class WatchlistActivity extends Activity {
         return "IMDb " + String.format(Locale.US, "%.1f", r) + "+";
     }
 
+    private static String durLabel(int d) {
+        return d == 1 ? "Até 1h30" : d == 2 ? "1h30 a 2h" : d == 3 ? "2h a 2h30" : "Mais de 2h30";
+    }
+
+    private static boolean durFits(Item it, int d) {
+        if (it.kind == 3 || it.runtime <= 0) return false;
+        switch (d) {
+            case 1: return it.runtime <= 90;
+            case 2: return it.runtime > 90 && it.runtime <= 120;
+            case 3: return it.runtime > 120 && it.runtime <= 150;
+            default: return it.runtime > 150;
+        }
+    }
+
+    private static String releaseLabel(String r) {
+        if (r == null || r.isEmpty()) return "";
+        String[] p = r.split("-");
+        if (p.length == 3) return p[2] + "/" + p[1] + "/" + p[0];
+        if (p.length == 2) return p[1] + "/" + p[0];
+        return p[0];
+    }
+
+    private static String normalize(String s) {
+        return Normalizer.normalize(s, Normalizer.Form.NFD).replaceAll("\\p{M}+", "").toLowerCase(Locale.ROOT);
+    }
+
+    private static String[] tokens(String q) {
+        String n = normalize(q).trim();
+        return n.isEmpty() ? new String[0] : n.split("\\s+");
+    }
+
+    // NOVO: entrou na Watchlist nos últimos 14 dias e já foi lançado.
+    private boolean inTop() {
+        return mode == M_TOPM || mode == M_TOPS;
+    }
+
+    private boolean isNew(Item it) {
+        return !it.upcoming && it.addedAt > 0 && System.currentTimeMillis() - it.addedAt <= NEW_MS;
+    }
+
+    private int countNew() {
+        int n = 0;
+        for (Item it : all) if (isNew(it)) n++;
+        return n;
+    }
+
+    private int countSoon() {
+        int n = 0;
+        for (Item it : all) if (it.upcoming) n++;
+        return n;
+    }
+
     private boolean matches(Item it, int skip) {
-        if (skip != T_GENRE && !current.equals(ALL) && !it.genres.contains(current)) return false;
+        if (skip != T_GENRE) for (String g : selGenres) if (!it.genres.contains(g)) return false;
         if (skip != T_YEAR && currentDecade != -1 && bucket(it.year) != currentDecade) return false;
         if (skip != T_KIND && currentKind != 0 && it.kind != currentKind) return false;
         if (skip != T_MORE && minRating > 0 && it.rating < minRating) return false;
+        if (skip != T_DUR && currentDur != 0 && !durFits(it, currentDur)) return false;
+        for (String token : queryTokens) if (!it.norm.contains(token)) return false;
+        if (mode == M_NEW && !isNew(it)) return false;
+        if (mode == M_SOON && !it.upcoming) return false;
         return true;
     }
 
@@ -528,13 +697,20 @@ public class WatchlistActivity extends Activity {
             case T_GENRE: {
                 int total = 0;
                 for (Item it : all) if (matches(it, T_GENRE)) total++;
-                out.add(option("Todos os gêneros", total, current.equals(ALL), () -> current = ALL));
+                Option clear = option("Todos os gêneros", total, selGenres.isEmpty(), selGenres::clear);
+                clear.keepOpen = true;
+                out.add(clear);
                 for (final String g : genreNames) {
                     if (g.equals(ALL)) continue;
                     int n = 0;
-                    for (Item it : all) if (matches(it, T_GENRE) && it.genres.contains(g)) n++;
-                    if (n == 0 && !g.equals(current)) continue;
-                    out.add(option(g, n, g.equals(current), () -> current = g));
+                    for (Item it : all) if (matches(it, -2) && it.genres.contains(g)) n++;
+                    boolean on = selGenres.contains(g);
+                    if (n == 0 && !on) continue;
+                    Option o = option(g, n, on, () -> {
+                        if (!selGenres.remove(g)) selGenres.add(g);
+                    });
+                    o.keepOpen = true;
+                    out.add(o);
                 }
                 break;
             }
@@ -564,6 +740,19 @@ public class WatchlistActivity extends Activity {
                 }
                 break;
             }
+            case T_DUR: {
+                int total = 0;
+                for (Item it : all) if (matches(it, T_DUR)) total++;
+                out.add(option("Qualquer duração", total, currentDur == 0, () -> currentDur = 0));
+                for (int k = 1; k <= 4; k++) {
+                    final int dur = k;
+                    int n = 0;
+                    for (Item it : all) if (matches(it, T_DUR) && durFits(it, dur)) n++;
+                    if (n == 0 && dur != currentDur) continue;
+                    out.add(option(durLabel(dur) + " (filmes)", n, dur == currentDur, () -> currentDur = dur));
+                }
+                break;
+            }
             case T_SORT:
                 out.add(option("Ordem padrão", -1, currentSort == 0, () -> currentSort = 0));
                 out.add(option("Maior nota IMDb", -1, currentSort == 1, () -> currentSort = 1));
@@ -580,7 +769,7 @@ public class WatchlistActivity extends Activity {
                     out.add(option("Nota IMDb " + String.format(Locale.US, "%.1f", r) + " ou mais", n,
                             r == minRating, () -> minRating = r));
                 }
-                if (!isActive(bar.get(0))) {
+                if (!isDefault()) {
                     out.add(option("Limpar todos os filtros", -1, false, this::clearFilters));
                 }
                 break;
@@ -589,7 +778,18 @@ public class WatchlistActivity extends Activity {
         return out;
     }
 
-    private void openMenu(final Drop d) {
+    private void openMenu(Drop d) {
+        if (inTop()) {
+            mode = M_ALL;
+            page = 0;
+            refreshBar();
+            filter();
+            render();
+        }
+        showMenu(d, -1);
+    }
+
+    private void showMenu(final Drop d, int focusIdx) {
         closeMenu(false);
         List<Option> options = optionsFor(d.type);
         if (options.isEmpty()) return;
@@ -597,7 +797,7 @@ public class WatchlistActivity extends Activity {
         menuList = new LinearLayout(this);
         menuList.setOrientation(LinearLayout.VERTICAL);
         menuList.setPadding(dp(6), dp(6), dp(6), dp(6));
-        View target = null;
+        View selected = null;
         for (final Option o : options) {
             final GradientDrawable obg = rounded(o.selected ? MENU_SELECTED : 0, 8);
             TextView t = text(16, MENU_TEXT, o.selected ? Typeface.BOLD : Typeface.NORMAL);
@@ -610,13 +810,24 @@ public class WatchlistActivity extends Activity {
             t.setClickable(true);
             t.setOnFocusChangeListener((v, has) -> obg.setColor(has ? MENU_FOCUS : o.selected ? MENU_SELECTED : 0));
             t.setOnClickListener(v -> {
+                int idx = menuList.indexOfChild(v);
                 o.apply.run();
-                closeMenu(false);
-                applyChange(d);
+                if (o.keepOpen) {
+                    page = 0;
+                    refreshBar();
+                    filter();
+                    render();
+                    showMenu(d, idx);
+                } else {
+                    closeMenu(false);
+                    applyChange(d);
+                }
             });
             menuList.addView(t, new LinearLayout.LayoutParams(-1, -2));
-            if (target == null || o.selected) target = t;
+            if (selected == null && o.selected) selected = t;
         }
+        View target = selected != null ? selected : menuList.getChildAt(0);
+        if (focusIdx >= 0) target = menuList.getChildAt(Math.min(focusIdx, menuList.getChildCount() - 1));
         int width = dp(300);
         int[] at = new int[2];
         int[] origin = new int[2];
@@ -658,6 +869,52 @@ public class WatchlistActivity extends Activity {
         super.onBackPressed();
     }
 
+    private void pickRandom() {
+        if (shown.isEmpty()) {
+            Toast.makeText(this, "Nenhum título para sortear neste filtro", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        int at = random.nextInt(shown.size());
+        Item it = shown.get(at);
+        page = at / PER_PAGE;
+        render();
+        focusCard(at % PER_PAGE);
+        String extra = it.rating > 0 ? " · IMDb " + String.format(Locale.US, "%.1f", it.rating) : "";
+        Toast.makeText(this, "Sorteado: " + it.title + extra, Toast.LENGTH_LONG).show();
+    }
+
+    // Busca digitada (teclado na tela / teclado USB); não usa o microfone do controle.
+    private void openSearch() {
+        closeMenu(false);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert);
+        final EditText input = new EditText(builder.getContext());
+        input.setSingleLine(true);
+        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+        input.setText(query);
+        input.setSelection(input.getText().length());
+        input.setImeOptions(EditorInfo.IME_ACTION_SEARCH);
+        builder.setTitle("Buscar título");
+        builder.setPositiveButton("Buscar", (dialog, which) -> applySearch(input.getText().toString()));
+        builder.setNegativeButton("Limpar", (dialog, which) -> applySearch(""));
+        final AlertDialog dialog = builder.create();
+        dialog.setView(input, dp(24), dp(8), dp(24), dp(8));
+        input.setOnEditorActionListener((v, actionId, event) -> {
+            applySearch(input.getText().toString());
+            dialog.dismiss();
+            return true;
+        });
+        dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+        dialog.show();
+        input.requestFocus();
+    }
+
+    private void applySearch(String text) {
+        query = text.trim();
+        queryTokens = tokens(query);
+        if (inTop()) mode = M_ALL;
+        applyChange(searchDrop);
+    }
+
     private static String kindLabel(int k) {
         return k == 1 ? "Filmes" : k == 2 ? "Filmes pra TV" : "Séries";
     }
@@ -693,6 +950,7 @@ public class WatchlistActivity extends Activity {
             List<Item> parsed = parse(raw);
             if (!parsed.isEmpty()) {
                 lastRaw = raw;
+                loadTop(raw);
                 setItems(parsed);
             }
         } catch (Exception ignored) {}
@@ -701,7 +959,7 @@ public class WatchlistActivity extends Activity {
     private void refreshIfStale() {
         File f = new File(getFilesDir(), CACHE_FILE);
         // Cache antigo sem gênero/nota (JSON de antes da atualização) é refeito na hora, sem esperar os 30 min.
-        if (f.exists() && !all.isEmpty() && hasMeta()
+        if (f.exists() && !all.isEmpty() && hasMeta() && lastRaw.contains("\"topMovies\"")
                 && System.currentTimeMillis() - f.lastModified() < MAX_AGE_MS) return;
         pool.execute(() -> {
             try {
@@ -718,6 +976,7 @@ public class WatchlistActivity extends Activity {
                 runOnUiThread(() -> {
                     if (isFinishing() || raw.equals(lastRaw)) return;
                     lastRaw = raw;
+                    loadTop(raw);
                     setItems(parsed);
                 });
             } catch (Exception e) {
@@ -749,31 +1008,60 @@ public class WatchlistActivity extends Activity {
         JSONArray arr = new JSONObject(json).getJSONArray("titles");
         List<Item> out = new ArrayList<>(arr.length());
         for (int i = 0; i < arr.length(); i++) {
-            JSONObject o = arr.getJSONObject(i);
-            Item it = new Item();
-            it.id = o.optString("id");
-            it.title = o.optString("title");
-            it.year = o.optInt("year", 0);
-            it.rating = o.optDouble("rating", 0);
-            if (Double.isNaN(it.rating)) it.rating = 0;
-            it.meta = o.optInt("metascore", 0);
-            String poster = o.optString("poster");
-            it.poster = poster.equals("null") ? "" : poster;
-            String type = o.optString("type");
-            it.series = type.equals("tvSeries") || type.equals("tvMiniSeries");
-            it.kind = type.equals("movie") ? 1 : type.equals("tvMovie") ? 2 : it.series ? 3 : 0;
-            JSONArray g = o.optJSONArray("genres");
-            if (g != null) {
-                for (int k = 0; k < g.length(); k++) {
-                    String name = g.optString(k);
-                    if (name.isEmpty()) continue;
-                    String pt = GENRES_PT.get(name);
-                    it.genres.add(pt != null ? pt : name);
-                }
-            }
-            if (!it.id.isEmpty() && !it.title.isEmpty()) out.add(it);
+            Item it = readItem(arr.getJSONObject(i));
+            if (it != null) out.add(it);
         }
         return out;
+    }
+
+    private static List<Item> parseTop(String json, String key) {
+        List<Item> out = new ArrayList<>();
+        try {
+            JSONArray arr = new JSONObject(json).optJSONArray(key);
+            if (arr == null) return out;
+            for (int i = 0; i < arr.length() && out.size() < 10; i++) {
+                Item it = readItem(arr.getJSONObject(i));
+                if (it != null) out.add(it);
+            }
+        } catch (Exception ignored) {}
+        return out;
+    }
+
+    private static Item readItem(JSONObject o) {
+        Item it = new Item();
+        it.id = o.optString("id");
+        it.title = o.optString("title");
+        it.norm = normalize(it.title);
+        it.year = o.optInt("year", 0);
+        it.rating = o.optDouble("rating", 0);
+        if (Double.isNaN(it.rating)) it.rating = 0;
+        it.meta = o.optInt("metascore", 0);
+        String poster = o.optString("poster");
+        it.poster = poster.equals("null") ? "" : poster;
+        String type = o.optString("type");
+        it.series = type.equals("tvSeries") || type.equals("tvMiniSeries");
+        it.kind = type.equals("movie") ? 1 : type.equals("tvMovie") ? 2 : it.series ? 3 : 0;
+        it.runtime = o.optInt("runtime", 0);
+        it.release = o.optString("release", "");
+        it.upcoming = o.optBoolean("upcoming", false);
+        it.addedAt = o.optLong("addedAt", 0L) * 1000L;
+        JSONArray g = o.optJSONArray("genres");
+        if (g != null) {
+            for (int k = 0; k < g.length(); k++) {
+                String name = g.optString(k);
+                if (name.isEmpty()) continue;
+                String pt = GENRES_PT.get(name);
+                it.genres.add(pt != null ? pt : name);
+            }
+        }
+        return !it.id.isEmpty() && !it.title.isEmpty() ? it : null;
+    }
+
+    private void loadTop(String raw) {
+        topMovies.clear();
+        topMovies.addAll(parseTop(raw, "topMovies"));
+        topSeries.clear();
+        topSeries.addAll(parseTop(raw, "topSeries"));
     }
 
     private void setItems(List<Item> items) {
@@ -792,7 +1080,7 @@ public class WatchlistActivity extends Activity {
         genreNames.clear();
         genreNames.add(ALL);
         genreNames.addAll(names);
-        if (!genreNames.contains(current)) current = ALL;
+        selGenres.retainAll(genreNames);
         decadeCounts.clear();
         for (Item it : all) {
             int b = bucket(it.year);
@@ -818,12 +1106,13 @@ public class WatchlistActivity extends Activity {
 
     private void filter() {
         shown.clear();
-        for (Item it : all) {
-            if (!matches(it, -2)) continue;
-            shown.add(it);
+        if (inTop()) {
+            shown.addAll(mode == M_TOPM ? topMovies : topSeries);
+        } else {
+            for (Item it : all) if (matches(it, -2)) shown.add(it);
+            if (currentSort == 1) Collections.sort(shown, (x, y) -> Double.compare(y.rating, x.rating));
+            else if (currentSort == 2) Collections.sort(shown, (x, y) -> Integer.compare(y.meta, x.meta));
         }
-        if (currentSort == 1) Collections.sort(shown, (x, y) -> Double.compare(y.rating, x.rating));
-        else if (currentSort == 2) Collections.sort(shown, (x, y) -> Integer.compare(y.meta, x.meta));
         int pages = pageCount();
         if (page >= pages) page = pages - 1;
         if (page < 0) page = 0;
@@ -842,10 +1131,12 @@ public class WatchlistActivity extends Activity {
                 Item it = shown.get(at);
                 cards[i].setVisibility(View.VISIBLE);
                 cards[i].setFocusable(true);
-                titles[i].setText(it.title);
+                titles[i].setText(inTop() ? (at + 1) + ". " + it.title : it.title);
                 bindRating(ratings[i], it);
                 bindMeta(i, it);
+                bindTag(i, it);
                 String meta = it.year > 0 ? String.valueOf(it.year) : "";
+                if (it.upcoming && !inTop() && !it.release.isEmpty()) meta = "Estreia " + releaseLabel(it.release);
                 if (it.series) meta = meta.isEmpty() ? "Série" : "Série · " + meta;
                 else if (it.kind == 2) meta = meta.isEmpty() ? "Filme TV" : "Filme TV · " + meta;
                 metas[i].setText(meta);
@@ -857,11 +1148,12 @@ public class WatchlistActivity extends Activity {
                 posters[i].setTag(null);
                 posters[i].setImageDrawable(null);
                 metaViews[i].setVisibility(View.GONE);
+                tagViews[i].setVisibility(View.GONE);
             }
         }
         pageView.setText(shown.isEmpty() ? "" : (page + 1) + " / " + pageCount());
         emptyView.setVisibility(shown.isEmpty() ? View.VISIBLE : View.GONE);
-        if (shown.isEmpty() && !all.isEmpty()) emptyView.setText("Nenhum título neste filtro");
+        if (shown.isEmpty() && !all.isEmpty()) emptyView.setText(inTop() ? "Top 10 indisponível no momento" : "Nenhum título neste filtro");
         updateHeader();
     }
 
@@ -878,6 +1170,28 @@ public class WatchlistActivity extends Activity {
         sb.setSpan(new RelativeSizeSpan(0.8f), 0, label.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         sb.setSpan(new ForegroundColorSpan(GOLD), label.length(), sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         view.setText(sb);
+    }
+
+    // Dois selos: EM BREVE (ainda não lançado) e NOVO (entrou na lista há pouco e já foi lançado).
+    private void bindTag(int i, Item it) {
+        String label = null;
+        int color = 0;
+        if (!inTop()) {
+            if (it.upcoming) {
+                label = "EM BREVE";
+                color = 0xFF1E6FD9;
+            } else if (isNew(it)) {
+                label = "NOVO";
+                color = 0xFF7E57C2;
+            }
+        }
+        if (label == null) {
+            tagViews[i].setVisibility(View.GONE);
+            return;
+        }
+        tagBgs[i].setColor(color);
+        tagViews[i].setText(label);
+        tagViews[i].setVisibility(View.VISIBLE);
     }
 
     private void bindMeta(int i, Item it) {
@@ -900,12 +1214,21 @@ public class WatchlistActivity extends Activity {
     }
 
     private void updateHeader() {
-        String title = current.equals(ALL) ? "Watchlist" : current;
-        if (currentDecade != -1) title += " · " + decadeLabel(currentDecade);
-        if (currentKind != 0) title += " · " + kindLabel(currentKind);
-        if (minRating > 0) title += " · " + ratingLabel(minRating);
-        if (currentSort == 1) title += " · nota IMDb";
-        else if (currentSort == 2) title += " · Metascore";
+        String title = "Watchlist";
+        if (inTop()) {
+            title = mode == M_TOPM ? "Top 10 filmes mais populares" : "Top 10 séries mais populares";
+        } else {
+            if (!selGenres.isEmpty()) title = TextUtils.join(" + ", selGenres);
+            if (mode == M_NEW) title += " · novos";
+            else if (mode == M_SOON) title += " · em breve";
+            if (currentDecade != -1) title += " · " + decadeLabel(currentDecade);
+            if (currentKind != 0) title += " · " + kindLabel(currentKind);
+            if (currentDur != 0) title += " · " + durLabel(currentDur);
+            if (minRating > 0) title += " · " + ratingLabel(minRating);
+            if (!query.isEmpty()) title += " · “" + query + "”";
+            if (currentSort == 1) title += " · nota IMDb";
+            else if (currentSort == 2) title += " · Metascore";
+        }
         headerTitle.setText(title);
         headerCount.setText(all.isEmpty() ? "" : String.valueOf(shown.size()));
     }
@@ -1038,7 +1361,7 @@ public class WatchlistActivity extends Activity {
         }
         View f = getCurrentFocus();
         int idx = f != null && f.getTag() instanceof Integer ? (Integer) f.getTag() : -1;
-        boolean onChip = f != null && f.getTag() instanceof Drop;
+        Drop chip = f != null && f.getTag() instanceof Drop ? (Drop) f.getTag() : null;
         boolean hasNext = (page + 1) * PER_PAGE < shown.size();
         switch (keyCode) {
             case KeyEvent.KEYCODE_DPAD_RIGHT:
@@ -1058,10 +1381,10 @@ public class WatchlistActivity extends Activity {
                     focusBar();
                     return true;
                 }
-                if (onChip) return true;
+                if (chip != null && chip.row == 0) return true;
                 break;
             case KeyEvent.KEYCODE_DPAD_DOWN:
-                if (onChip) {
+                if (chip != null && chip.row == 1) {
                     focusCard(0);
                     return true;
                 }
