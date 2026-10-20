@@ -3,7 +3,7 @@ name: Sync IMDb Watchlist
 on:
   workflow_dispatch:
   schedule:
-    - cron: "17 */6 * * *"
+    - cron: "17 9 * * *"
 
 permissions:
   contents: write
