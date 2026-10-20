@@ -6,7 +6,13 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.ColorFilter;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.PixelFormat;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
@@ -22,9 +28,9 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.FrameLayout;
-import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -64,6 +70,12 @@ public class WatchlistActivity extends Activity {
     private static final int GOLD = 0xFFF5C518;
     private static final int CARD = 0x14FFFFFF;
     private static final int CARD_ON = 0x3DFFFFFF;
+    private static final int MENU_BG = 0xFFEDEAF5;
+    private static final int MENU_TEXT = 0xFF1A1426;
+    private static final int MENU_DIM = 0xFF5B5470;
+    private static final int MENU_FOCUS = 0xFFC9BDEB;
+    private static final int MENU_SELECTED = 0xFFDCD3F2;
+    private static final double[] MIN_RATINGS = {6.0, 7.0, 8.0};
 
     private static final Map<String, String> GENRES_PT = new HashMap<>();
     static {
@@ -108,34 +120,92 @@ public class WatchlistActivity extends Activity {
         List<String> genres = new ArrayList<>();
     }
 
-    private static final int T_GENRE = 0, T_YEAR = 1, T_KIND = 2, T_SORT = 3;
+    private static final int T_ALL = -1, T_GENRE = 0, T_YEAR = 1, T_KIND = 2, T_SORT = 3, T_MORE = 4;
 
-    private static final class Chip {
+    private static final class Drop {
         int type;
-        String genre = "";
-        int value = -1; // década, tipo ou ordem
         TextView view;
         GradientDrawable bg;
+    }
+
+    private static final class Option {
+        String label;
+        int count = -1;
+        boolean selected;
+        Runnable apply;
+    }
+
+    private static final class Chevron extends Drawable {
+        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final int size;
+
+        Chevron(int size, int color) {
+            this.size = size;
+            paint.setColor(color);
+            paint.setStyle(Paint.Style.FILL);
+        }
+
+        @Override
+        public void draw(Canvas canvas) {
+            Path path = new Path();
+            float w = getBounds().width();
+            float h = getBounds().height();
+            path.moveTo(0, h * 0.30f);
+            path.lineTo(w, h * 0.30f);
+            path.lineTo(w / 2f, h * 0.75f);
+            path.close();
+            canvas.drawPath(path, paint);
+        }
+
+        @Override
+        public int getIntrinsicWidth() {
+            return size;
+        }
+
+        @Override
+        public int getIntrinsicHeight() {
+            return size;
+        }
+
+        @Override
+        public void setAlpha(int alpha) {
+            paint.setAlpha(alpha);
+        }
+
+        @Override
+        public void setColorFilter(ColorFilter filter) {
+            paint.setColorFilter(filter);
+        }
+
+        @Override
+        public int getOpacity() {
+            return PixelFormat.TRANSLUCENT;
+        }
     }
 
     private final List<Item> all = new ArrayList<>();
     private final List<Item> shown = new ArrayList<>();
     private final List<String> genreNames = new ArrayList<>();
     private final Map<String, Integer> genreCounts = new HashMap<>();
-    private final List<Chip> chips = new ArrayList<>();
+    private final List<Drop> bar = new ArrayList<>();
     private String current = ALL;
     private int currentDecade = -1;
     private int currentKind = 0;
     private int currentSort = 0;
+    private double minRating = 0;
     private final int[] kindCounts = new int[4];
-    private LinearLayout kindRow;
     private final Map<Integer, Integer> decadeCounts = new HashMap<>();
     private final List<Integer> decadeList = new ArrayList<>();
-    private LinearLayout yearRow;
     private String lastRaw = "";
     private int page = 0;
     private volatile int generation = 0;
     private int posterW;
+    private int lastBar = 0;
+    private FrameLayout root;
+    private LinearLayout filterBar;
+    private ScrollView menu;
+    private LinearLayout menuList;
+    private Drop openDrop;
 
     private final FrameLayout[] cards = new FrameLayout[PER_PAGE];
     private final ImageView[] posters = new ImageView[PER_PAGE];
@@ -146,7 +216,6 @@ public class WatchlistActivity extends Activity {
     private final TextView[] metas = new TextView[PER_PAGE];
     private final TextView[] genreViews = new TextView[PER_PAGE];
 
-    private LinearLayout chipRow;
     private TextView headerTitle;
     private TextView headerCount;
     private TextView pageView;
@@ -190,11 +259,11 @@ public class WatchlistActivity extends Activity {
         int padX = 40;
         int gap = 12;
         int cellW = (wdp - 2 * padX - gap * (COLS - 1)) / COLS;
-        int cellH = (hdp - 238) / ROWS;
+        int cellH = (hdp - 172) / ROWS;
         int pw = Math.min((cellH - 16) * 2 / 3, cellW * 52 / 100);
         posterW = dp(pw);
 
-        FrameLayout root = new FrameLayout(this);
+        root = new FrameLayout(this);
 
         LinearLayout main = new LinearLayout(this);
         main.setOrientation(LinearLayout.VERTICAL);
@@ -215,42 +284,20 @@ public class WatchlistActivity extends Activity {
         header.addView(pageView);
         main.addView(header, new LinearLayout.LayoutParams(-1, dp(40)));
 
-        HorizontalScrollView scroll = new HorizontalScrollView(this);
-        scroll.setHorizontalScrollBarEnabled(false);
-        scroll.setOverScrollMode(View.OVER_SCROLL_NEVER);
-        scroll.setClipToPadding(false);
-        chipRow = new LinearLayout(this);
-        chipRow.setOrientation(LinearLayout.HORIZONTAL);
-        chipRow.setPadding(dp(4), dp(4), dp(4), dp(4));
-        scroll.addView(chipRow, new FrameLayout.LayoutParams(-2, -1));
-        LinearLayout.LayoutParams scrollLp = new LinearLayout.LayoutParams(-1, dp(40));
-        scrollLp.topMargin = dp(4);
-        scrollLp.bottomMargin = dp(2);
-        main.addView(scroll, scrollLp);
-
-        HorizontalScrollView yscroll = new HorizontalScrollView(this);
-        yscroll.setHorizontalScrollBarEnabled(false);
-        yscroll.setOverScrollMode(View.OVER_SCROLL_NEVER);
-        yscroll.setClipToPadding(false);
-        yearRow = new LinearLayout(this);
-        yearRow.setOrientation(LinearLayout.HORIZONTAL);
-        yearRow.setPadding(dp(4), dp(2), dp(4), dp(2));
-        yscroll.addView(yearRow, new FrameLayout.LayoutParams(-2, -1));
-        LinearLayout.LayoutParams yearLp = new LinearLayout.LayoutParams(-1, dp(34));
-        yearLp.bottomMargin = dp(2);
-        main.addView(yscroll, yearLp);
-
-        HorizontalScrollView kscroll = new HorizontalScrollView(this);
-        kscroll.setHorizontalScrollBarEnabled(false);
-        kscroll.setOverScrollMode(View.OVER_SCROLL_NEVER);
-        kscroll.setClipToPadding(false);
-        kindRow = new LinearLayout(this);
-        kindRow.setOrientation(LinearLayout.HORIZONTAL);
-        kindRow.setPadding(dp(4), dp(2), dp(4), dp(2));
-        kscroll.addView(kindRow, new FrameLayout.LayoutParams(-2, -1));
-        LinearLayout.LayoutParams kindLp = new LinearLayout.LayoutParams(-1, dp(34));
-        kindLp.bottomMargin = dp(10);
-        main.addView(kscroll, kindLp);
+        filterBar = new LinearLayout(this);
+        filterBar.setOrientation(LinearLayout.HORIZONTAL);
+        filterBar.setGravity(Gravity.CENTER_VERTICAL);
+        filterBar.setPadding(dp(4), dp(4), dp(4), dp(4));
+        addDrop(T_ALL);
+        addDrop(T_GENRE);
+        addDrop(T_YEAR);
+        addDrop(T_KIND);
+        addDrop(T_SORT);
+        addDrop(T_MORE);
+        LinearLayout.LayoutParams barLp = new LinearLayout.LayoutParams(-1, dp(46));
+        barLp.topMargin = dp(4);
+        barLp.bottomMargin = dp(12);
+        main.addView(filterBar, barLp);
 
         LinearLayout grid = new LinearLayout(this);
         grid.setOrientation(LinearLayout.VERTICAL);
@@ -377,94 +424,238 @@ public class WatchlistActivity extends Activity {
         return Math.round(v * getResources().getDisplayMetrics().density);
     }
 
-    private void rebuildChips() {
-        chipRow.removeAllViews();
-        yearRow.removeAllViews();
-        kindRow.removeAllViews();
-        chips.clear();
-        for (String g : genreNames) {
-            Chip chip = new Chip();
-            chip.type = T_GENRE;
-            chip.genre = g;
-            Integer n = g.equals(ALL) ? Integer.valueOf(all.size()) : genreCounts.get(g);
-            addChip(chipRow, chip, n == null ? g : g + "  " + n, 16, 0);
-        }
-        for (int d : decadeList) {
-            Chip chip = new Chip();
-            chip.type = T_YEAR;
-            chip.value = d;
-            Integer n = d == -1 ? Integer.valueOf(all.size()) : decadeCounts.get(d);
-            addChip(yearRow, chip, decadeLabel(d) + (n == null ? "" : "  " + n), 14, 0);
-        }
-        addKindChip(0, "Todos os tipos", all.size());
-        addKindChip(1, "Filmes", kindCounts[1]);
-        addKindChip(2, "Filmes pra TV", kindCounts[2]);
-        addKindChip(3, "Séries", kindCounts[3]);
-        addSortChip(0, "Ordem padrão", 24);
-        addSortChip(1, "Maior nota IMDb", 0);
-        addSortChip(2, "Maior Metascore", 0);
-        refreshChips();
-    }
-
-    private void addKindChip(int kind, String label, int n) {
-        if (kind != 0 && n == 0) return;
-        Chip chip = new Chip();
-        chip.type = T_KIND;
-        chip.value = kind;
-        addChip(kindRow, chip, kind == 0 ? label : label + "  " + n, 14, 0);
-    }
-
-    private void addSortChip(int sort, String label, int gapDp) {
-        Chip chip = new Chip();
-        chip.type = T_SORT;
-        chip.value = sort;
-        addChip(kindRow, chip, label, 14, gapDp);
-    }
-
-    private void addChip(LinearLayout row, final Chip chip, String label, int sp, int gapDp) {
-        chip.bg = rounded(CARD, 20);
-        TextView v = text(sp, TEXT_DIM, Typeface.NORMAL);
-        v.setText(label);
+    private void addDrop(int type) {
+        final Drop d = new Drop();
+        d.type = type;
+        d.bg = rounded(CARD, 20);
+        TextView v = text(16, TEXT_DIM, Typeface.NORMAL);
         v.setSingleLine(true);
         v.setGravity(Gravity.CENTER);
         v.setPadding(dp(18), 0, dp(18), 0);
-        v.setBackground(chip.bg);
+        v.setBackground(d.bg);
         v.setFocusable(true);
         v.setClickable(true);
-        v.setTag(chip);
-        v.setOnFocusChangeListener((view, has) -> styleChip(chip, has));
-        v.setOnClickListener(view -> {
-            switch (chip.type) {
-                case T_YEAR: currentDecade = chip.value; break;
-                case T_KIND: currentKind = chip.value; break;
-                case T_SORT: currentSort = chip.value; break;
-                default: current = chip.genre;
-            }
-            page = 0;
-            refreshChips();
-            filter();
-            render();
-            focusCard(0);
+        v.setTag(d);
+        if (type != T_ALL) {
+            Chevron chevron = new Chevron(dp(14), 0xCCFFFFFF);
+            chevron.setBounds(0, 0, dp(14), dp(14));
+            v.setCompoundDrawables(null, null, chevron, null);
+            v.setCompoundDrawablePadding(dp(8));
+        }
+        v.setOnFocusChangeListener((view, has) -> {
+            if (has) lastBar = bar.indexOf(d);
+            styleDrop(d, has);
         });
-        chip.view = v;
+        v.setOnClickListener(view -> {
+            if (d.type == T_ALL) {
+                clearFilters();
+                applyChange(null);
+            } else {
+                openMenu(d);
+            }
+        });
+        d.view = v;
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, -1);
-        lp.leftMargin = dp(gapDp);
-        lp.rightMargin = dp(8);
-        row.addView(v, lp);
-        chips.add(chip);
+        lp.rightMargin = dp(10);
+        filterBar.addView(v, lp);
+        bar.add(d);
     }
 
-    private boolean isActive(Chip c) {
-        switch (c.type) {
-            case T_YEAR: return c.value == currentDecade;
-            case T_KIND: return c.value == currentKind;
-            case T_SORT: return c.value == currentSort;
-            default: return c.genre.equals(current);
+    private void clearFilters() {
+        current = ALL;
+        currentDecade = -1;
+        currentKind = 0;
+        currentSort = 0;
+        minRating = 0;
+    }
+
+    private void applyChange(Drop focusOn) {
+        page = 0;
+        refreshBar();
+        filter();
+        render();
+        if (focusOn != null) focusOn.view.requestFocus();
+        else focusCard(0);
+    }
+
+    private boolean isActive(Drop d) {
+        switch (d.type) {
+            case T_GENRE: return !current.equals(ALL);
+            case T_YEAR: return currentDecade != -1;
+            case T_KIND: return currentKind != 0;
+            case T_SORT: return currentSort != 0;
+            case T_MORE: return minRating > 0;
+            default: return current.equals(ALL) && currentDecade == -1 && currentKind == 0
+                    && currentSort == 0 && minRating <= 0;
         }
     }
 
-    private static int rowOf(Chip c) {
-        return c.type == T_GENRE ? 0 : c.type == T_YEAR ? 1 : 2;
+    private String dropLabel(Drop d) {
+        switch (d.type) {
+            case T_GENRE: return current.equals(ALL) ? "Gêneros" : current;
+            case T_YEAR: return currentDecade == -1 ? "Anos" : decadeLabel(currentDecade);
+            case T_KIND: return currentKind == 0 ? "Tipos" : kindLabel(currentKind);
+            case T_SORT: return currentSort == 1 ? "Maior nota IMDb" : currentSort == 2 ? "Maior Metascore" : "Ordem";
+            case T_MORE: return minRating > 0 ? ratingLabel(minRating) : "Mais";
+            default: return all.isEmpty() ? "Todos" : "Todos  " + all.size();
+        }
+    }
+
+    private static String ratingLabel(double r) {
+        return "IMDb " + String.format(Locale.US, "%.1f", r) + "+";
+    }
+
+    private boolean matches(Item it, int skip) {
+        if (skip != T_GENRE && !current.equals(ALL) && !it.genres.contains(current)) return false;
+        if (skip != T_YEAR && currentDecade != -1 && bucket(it.year) != currentDecade) return false;
+        if (skip != T_KIND && currentKind != 0 && it.kind != currentKind) return false;
+        if (skip != T_MORE && minRating > 0 && it.rating < minRating) return false;
+        return true;
+    }
+
+    private Option option(String label, int count, boolean selected, Runnable apply) {
+        Option o = new Option();
+        o.label = label;
+        o.count = count;
+        o.selected = selected;
+        o.apply = apply;
+        return o;
+    }
+
+    private List<Option> optionsFor(int type) {
+        List<Option> out = new ArrayList<>();
+        switch (type) {
+            case T_GENRE: {
+                int total = 0;
+                for (Item it : all) if (matches(it, T_GENRE)) total++;
+                out.add(option("Todos os gêneros", total, current.equals(ALL), () -> current = ALL));
+                for (final String g : genreNames) {
+                    if (g.equals(ALL)) continue;
+                    int n = 0;
+                    for (Item it : all) if (matches(it, T_GENRE) && it.genres.contains(g)) n++;
+                    if (n == 0 && !g.equals(current)) continue;
+                    out.add(option(g, n, g.equals(current), () -> current = g));
+                }
+                break;
+            }
+            case T_YEAR: {
+                int total = 0;
+                for (Item it : all) if (matches(it, T_YEAR)) total++;
+                out.add(option("Todos os anos", total, currentDecade == -1, () -> currentDecade = -1));
+                for (final int d : decadeList) {
+                    if (d == -1) continue;
+                    int n = 0;
+                    for (Item it : all) if (matches(it, T_YEAR) && bucket(it.year) == d) n++;
+                    if (n == 0 && d != currentDecade) continue;
+                    out.add(option(decadeLabel(d), n, d == currentDecade, () -> currentDecade = d));
+                }
+                break;
+            }
+            case T_KIND: {
+                int total = 0;
+                for (Item it : all) if (matches(it, T_KIND)) total++;
+                out.add(option("Todos os tipos", total, currentKind == 0, () -> currentKind = 0));
+                for (int k = 1; k <= 3; k++) {
+                    final int kind = k;
+                    int n = 0;
+                    for (Item it : all) if (matches(it, T_KIND) && it.kind == kind) n++;
+                    if (n == 0 && kind != currentKind) continue;
+                    out.add(option(kindLabel(kind), n, kind == currentKind, () -> currentKind = kind));
+                }
+                break;
+            }
+            case T_SORT:
+                out.add(option("Ordem padrão", -1, currentSort == 0, () -> currentSort = 0));
+                out.add(option("Maior nota IMDb", -1, currentSort == 1, () -> currentSort = 1));
+                out.add(option("Maior Metascore", -1, currentSort == 2, () -> currentSort = 2));
+                break;
+            default: {
+                int total = 0;
+                for (Item it : all) if (matches(it, T_MORE)) total++;
+                out.add(option("Qualquer nota", total, minRating <= 0, () -> minRating = 0));
+                for (final double r : MIN_RATINGS) {
+                    int n = 0;
+                    for (Item it : all) if (matches(it, T_MORE) && it.rating >= r) n++;
+                    if (n == 0 && r != minRating) continue;
+                    out.add(option("Nota IMDb " + String.format(Locale.US, "%.1f", r) + " ou mais", n,
+                            r == minRating, () -> minRating = r));
+                }
+                if (!isActive(bar.get(0))) {
+                    out.add(option("Limpar todos os filtros", -1, false, this::clearFilters));
+                }
+                break;
+            }
+        }
+        return out;
+    }
+
+    private void openMenu(final Drop d) {
+        closeMenu(false);
+        List<Option> options = optionsFor(d.type);
+        if (options.isEmpty()) return;
+        openDrop = d;
+        menuList = new LinearLayout(this);
+        menuList.setOrientation(LinearLayout.VERTICAL);
+        menuList.setPadding(dp(6), dp(6), dp(6), dp(6));
+        View target = null;
+        for (final Option o : options) {
+            final GradientDrawable obg = rounded(o.selected ? MENU_SELECTED : 0, 8);
+            TextView t = text(16, MENU_TEXT, o.selected ? Typeface.BOLD : Typeface.NORMAL);
+            t.setText(o.count >= 0 ? o.label + " (" + o.count + ")" : o.label);
+            t.setSingleLine(true);
+            t.setEllipsize(TextUtils.TruncateAt.END);
+            t.setPadding(dp(16), dp(11), dp(16), dp(11));
+            t.setBackground(obg);
+            t.setFocusable(true);
+            t.setClickable(true);
+            t.setOnFocusChangeListener((v, has) -> obg.setColor(has ? MENU_FOCUS : o.selected ? MENU_SELECTED : 0));
+            t.setOnClickListener(v -> {
+                o.apply.run();
+                closeMenu(false);
+                applyChange(d);
+            });
+            menuList.addView(t, new LinearLayout.LayoutParams(-1, -2));
+            if (target == null || o.selected) target = t;
+        }
+        int width = dp(300);
+        int[] at = new int[2];
+        int[] origin = new int[2];
+        d.view.getLocationInWindow(at);
+        root.getLocationInWindow(origin);
+        int x = Math.max(dp(8), Math.min(at[0] - origin[0], root.getWidth() - width - dp(8)));
+        int y = at[1] - origin[1] + d.view.getHeight() + dp(6);
+        int maxH = Math.max(dp(120), root.getHeight() - y - dp(16));
+        menuList.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+        int height = Math.min(menuList.getMeasuredHeight(), maxH);
+        menu = new ScrollView(this);
+        menu.setBackground(rounded(MENU_BG, 14));
+        menu.setClipToOutline(true);
+        menu.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        menu.addView(menuList, new FrameLayout.LayoutParams(-1, -2));
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(width, height, Gravity.START | Gravity.TOP);
+        lp.leftMargin = x;
+        lp.topMargin = y;
+        root.addView(menu, lp);
+        if (target != null) target.requestFocus();
+    }
+
+    private void closeMenu(boolean restoreFocus) {
+        if (menu != null) root.removeView(menu);
+        menu = null;
+        menuList = null;
+        Drop d = openDrop;
+        openDrop = null;
+        if (restoreFocus && d != null) d.view.requestFocus();
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (openDrop != null) {
+            closeMenu(true);
+            return;
+        }
+        super.onBackPressed();
     }
 
     private static String kindLabel(int k) {
@@ -479,16 +670,19 @@ public class WatchlistActivity extends Activity {
         return d == -1 ? "Todos os anos" : d == 1960 ? "Até 1969" : d + "s";
     }
 
-    private void refreshChips() {
-        for (Chip c : chips) styleChip(c, c.view.hasFocus());
+    private void refreshBar() {
+        for (Drop d : bar) {
+            d.view.setText(dropLabel(d));
+            styleDrop(d, d.view.hasFocus());
+        }
     }
 
-    private void styleChip(Chip c, boolean focused) {
-        boolean active = isActive(c);
-        c.bg.setColor(focused ? CARD_ON : active ? 0x33FFFFFF : CARD);
-        c.bg.setStroke(focused ? dp(2) : 0, 0xFFFFFFFF);
-        c.view.setTextColor(active || focused ? TEXT : TEXT_DIM);
-        c.view.setTypeface(Typeface.SANS_SERIF, active ? Typeface.BOLD : Typeface.NORMAL);
+    private void styleDrop(Drop d, boolean focused) {
+        boolean active = isActive(d);
+        d.bg.setColor(focused ? CARD_ON : active ? 0x33FFFFFF : CARD);
+        d.bg.setStroke(focused ? dp(2) : 0, 0xFFFFFFFF);
+        d.view.setTextColor(active || focused ? TEXT : TEXT_DIM);
+        d.view.setTypeface(Typeface.SANS_SERIF, active ? Typeface.BOLD : Typeface.NORMAL);
     }
 
     private void loadCache() {
@@ -615,7 +809,8 @@ public class WatchlistActivity extends Activity {
         java.util.Arrays.fill(kindCounts, 0);
         for (Item it : all) kindCounts[it.kind]++;
         if (currentKind != 0 && kindCounts[currentKind] == 0) currentKind = 0;
-        rebuildChips();
+        if (minRating > 0 && all.isEmpty()) minRating = 0;
+        refreshBar();
         filter();
         render();
         if (getCurrentFocus() == null) focusCard(0);
@@ -624,9 +819,7 @@ public class WatchlistActivity extends Activity {
     private void filter() {
         shown.clear();
         for (Item it : all) {
-            if (!current.equals(ALL) && !it.genres.contains(current)) continue;
-            if (currentDecade != -1 && bucket(it.year) != currentDecade) continue;
-            if (currentKind != 0 && it.kind != currentKind) continue;
+            if (!matches(it, -2)) continue;
             shown.add(it);
         }
         if (currentSort == 1) Collections.sort(shown, (x, y) -> Double.compare(y.rating, x.rating));
@@ -710,6 +903,7 @@ public class WatchlistActivity extends Activity {
         String title = current.equals(ALL) ? "Watchlist" : current;
         if (currentDecade != -1) title += " · " + decadeLabel(currentDecade);
         if (currentKind != 0) title += " · " + kindLabel(currentKind);
+        if (minRating > 0) title += " · " + ratingLabel(minRating);
         if (currentSort == 1) title += " · nota IMDb";
         else if (currentSort == 2) title += " · Metascore";
         headerTitle.setText(title);
@@ -806,13 +1000,9 @@ public class WatchlistActivity extends Activity {
         if (i >= 0 && i < PER_PAGE && cards[i].getVisibility() == View.VISIBLE) cards[i].requestFocus();
     }
 
-    private void focusRow(int row) {
-        for (Chip c : chips) {
-            if (rowOf(c) == row && isActive(c)) {
-                c.view.requestFocus();
-                return;
-            }
-        }
+    private void focusBar() {
+        if (bar.isEmpty()) return;
+        bar.get(Math.max(0, Math.min(lastBar, bar.size() - 1))).view.requestFocus();
     }
 
     private void goToPage(int target, int row, boolean lastColumn) {
@@ -827,9 +1017,28 @@ public class WatchlistActivity extends Activity {
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (openDrop != null && menuList != null) {
+            int at = menuList.indexOfChild(getCurrentFocus());
+            switch (keyCode) {
+                case KeyEvent.KEYCODE_DPAD_UP:
+                    return at <= 0 || super.onKeyDown(keyCode, event);
+                case KeyEvent.KEYCODE_DPAD_DOWN:
+                    return at == menuList.getChildCount() - 1 || super.onKeyDown(keyCode, event);
+                case KeyEvent.KEYCODE_DPAD_LEFT:
+                case KeyEvent.KEYCODE_DPAD_RIGHT:
+                case KeyEvent.KEYCODE_CHANNEL_DOWN:
+                case KeyEvent.KEYCODE_CHANNEL_UP:
+                case KeyEvent.KEYCODE_PAGE_DOWN:
+                case KeyEvent.KEYCODE_PAGE_UP:
+                case KeyEvent.KEYCODE_MENU:
+                    return true;
+                default:
+                    return super.onKeyDown(keyCode, event);
+            }
+        }
         View f = getCurrentFocus();
         int idx = f != null && f.getTag() instanceof Integer ? (Integer) f.getTag() : -1;
-        boolean onChip = f != null && f.getTag() instanceof Chip;
+        boolean onChip = f != null && f.getTag() instanceof Drop;
         boolean hasNext = (page + 1) * PER_PAGE < shown.size();
         switch (keyCode) {
             case KeyEvent.KEYCODE_DPAD_RIGHT:
@@ -846,20 +1055,14 @@ public class WatchlistActivity extends Activity {
                 break;
             case KeyEvent.KEYCODE_DPAD_UP:
                 if (idx >= 0 && idx < COLS) {
-                    focusRow(2);
+                    focusBar();
                     return true;
                 }
-                if (onChip) {
-                    int r = rowOf((Chip) f.getTag());
-                    if (r > 0) focusRow(r - 1);
-                    return true;
-                }
+                if (onChip) return true;
                 break;
             case KeyEvent.KEYCODE_DPAD_DOWN:
                 if (onChip) {
-                    int r = rowOf((Chip) f.getTag());
-                    if (r < 2) focusRow(r + 1);
-                    else focusCard(0);
+                    focusCard(0);
                     return true;
                 }
                 break;
@@ -876,7 +1079,7 @@ public class WatchlistActivity extends Activity {
                 if (page > 0) goToPage(page - 1, 0, false);
                 return true;
             case KeyEvent.KEYCODE_MENU:
-                focusRow(0);
+                focusBar();
                 return true;
             default:
                 break;
