@@ -1,0 +1,21 @@
+diff --git a/src/com/ansub/tvhome/MainActivity.java b/src/com/ansub/tvhome/MainActivity.java
+--- a/src/com/ansub/tvhome/MainActivity.java
++++ b/src/com/ansub/tvhome/MainActivity.java
+@@ -336,1 +336,1 @@
+-        addTile(root, ADD, Strings.t("+ App"), null, LineIcon.PLUS, null, gridX(plusAt), gridY(plusAt), w, h);
++        addTile(root, ADD, Strings.t("Ver lista"), null, LineIcon.PLUS, null, gridX(plusAt), gridY(plusAt), w, h);
+@@ -831,1 +831,1 @@
+-        String title = replaceIndex < 0 ? Strings.t("More apps")
++        String title = replaceIndex < 0 ? Strings.t("Ver lista")
+diff --git a/src/com/ansub/tvhome/Strings.java b/src/com/ansub/tvhome/Strings.java
+--- a/src/com/ansub/tvhome/Strings.java
++++ b/src/com/ansub/tvhome/Strings.java
+@@ -11,1 +11,1 @@
+-        "Settings", "+ App", "Network", "Offline", "Sound", "Picture",
++        "Settings", "Ver lista", "Network", "Offline", "Sound", "Picture",
+@@ -78,1 +78,1 @@
+-            "Configurações", "+ App", "Rede", "Sem conexão", "Som", "Imagem",
++            "Configurações", "Ver lista", "Rede", "Sem conexão", "Som", "Imagem",
+@@ -80,1 +80,1 @@
+-            "Use as setas para mover e depois aperte OK", "Todos os apps já estão aqui", "Mais apps", "Substituir %s",
++            "Use as setas para mover e depois aperte OK", "Todos os apps já estão aqui", "Ver lista", "Substituir %s",

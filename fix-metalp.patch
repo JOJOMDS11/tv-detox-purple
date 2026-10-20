@@ -1,0 +1,17 @@
+diff --git a/src/com/ansub/tvhome/WatchlistActivity.java b/src/com/ansub/tvhome/WatchlistActivity.java
+index b5d3afd..c9bbfd5 100644
+--- a/src/com/ansub/tvhome/WatchlistActivity.java
++++ b/src/com/ansub/tvhome/WatchlistActivity.java
+@@ -292,9 +292,9 @@ public class WatchlistActivity extends Activity {
+         metaView.setGravity(Gravity.CENTER);
+         metaView.setPadding(dp(4), dp(1), dp(4), dp(1));
+         metaView.setVisibility(View.GONE);
+-        FrameLayout.LayoutParams metaLp = new FrameLayout.LayoutParams(-2, -2, Gravity.START | Gravity.TOP);
+-        metaLp.setMargins(dp(3), dp(3), 0, 0);
+-        posterBox.addView(metaView, metaLp);
++        FrameLayout.LayoutParams badgeLp = new FrameLayout.LayoutParams(-2, -2, Gravity.START | Gravity.TOP);
++        badgeLp.setMargins(dp(3), dp(3), 0, 0);
++        posterBox.addView(metaView, badgeLp);
+         inner.addView(posterBox, new LinearLayout.LayoutParams(dp(pw), -1));
+ 
+         LinearLayout col = new LinearLayout(this);

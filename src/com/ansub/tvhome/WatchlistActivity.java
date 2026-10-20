@@ -130,6 +130,9 @@ public class WatchlistActivity extends Activity {
         int kind; // 1 filme, 2 filme pra TV, 3 série, 0 outros
         int runtime;
         String release = "";
+        String plot = "";
+        List<String> directors = new ArrayList<>();
+        List<String> cast = new ArrayList<>();
         boolean upcoming;
         long addedAt;
         String norm = "";
@@ -383,7 +386,7 @@ public class WatchlistActivity extends Activity {
         });
         card.setOnClickListener(v -> {
             int at = page * PER_PAGE + index;
-            if (at < shown.size()) openInStremio(shown.get(at));
+            if (at < shown.size()) showDetails(shown.get(at));
         });
 
         LinearLayout inner = new LinearLayout(this);
@@ -1044,6 +1047,9 @@ public class WatchlistActivity extends Activity {
         it.runtime = o.optInt("runtime", 0);
         it.release = o.optString("release", "");
         it.upcoming = o.optBoolean("upcoming", false);
+        it.plot = o.optString("plot", "");
+        addNames(it.directors, o.optJSONArray("directors"));
+        addNames(it.cast, o.optJSONArray("cast"));
         it.addedAt = o.optLong("addedAt", 0L) * 1000L;
         JSONArray g = o.optJSONArray("genres");
         if (g != null) {
@@ -1055,6 +1061,14 @@ public class WatchlistActivity extends Activity {
             }
         }
         return !it.id.isEmpty() && !it.title.isEmpty() ? it : null;
+    }
+
+    private static void addNames(List<String> out, JSONArray arr) {
+        if (arr == null) return;
+        for (int k = 0; k < arr.length(); k++) {
+            String n = arr.optString(k);
+            if (!n.isEmpty()) out.add(n);
+        }
     }
 
     private void loadTop(String raw) {
@@ -1408,6 +1422,126 @@ public class WatchlistActivity extends Activity {
                 break;
         }
         return super.onKeyDown(keyCode, event);
+    }
+
+    // Popup de detalhes: dados já vêm no JSON (nenhum pedido de rede ao abrir).
+    private void showDetails(final Item it) {
+        final AlertDialog.Builder builder = new AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert);
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(8), dp(4), dp(8), dp(4));
+
+        TextView title = text(24, TEXT, Typeface.BOLD);
+        title.setText(it.title);
+        box.addView(title);
+
+        StringBuilder info = new StringBuilder();
+        if (it.year > 0) info.append(it.year);
+        if (it.runtime > 0) info.append(info.length() > 0 ? " · " : "").append(it.runtime).append(" min");
+        if (it.rating > 0) info.append(info.length() > 0 ? " · " : "").append("IMDb ").append(String.format(Locale.US, "%.1f", it.rating));
+        if (it.meta > 0) info.append(info.length() > 0 ? " · " : "").append("Metascore ").append(it.meta);
+        if (!it.genres.isEmpty()) info.append(info.length() > 0 ? " · " : "").append(TextUtils.join(", ", it.genres));
+        if (info.length() > 0) {
+            TextView meta = text(14, TEXT_DIM, Typeface.NORMAL);
+            meta.setText(info.toString());
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, -2);
+            lp.topMargin = dp(6);
+            box.addView(meta, lp);
+        }
+        addDetailLine(box, "Direção: ", TextUtils.join(", ", it.directors));
+        addDetailLine(box, "Elenco: ", TextUtils.join(", ", it.cast));
+
+        TextView plot = text(16, TEXT, Typeface.NORMAL);
+        plot.setLineSpacing(0, 1.15f);
+        plot.setText(it.plot.isEmpty() ? "Sem sinopse disponível." : it.plot);
+        ScrollView scroll = new ScrollView(this);
+        scroll.addView(plot);
+        LinearLayout.LayoutParams plotLp = new LinearLayout.LayoutParams(-1, -2);
+        plotLp.topMargin = dp(12);
+        box.addView(scroll, plotLp);
+
+        LinearLayout buttons = new LinearLayout(this);
+        buttons.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams btnRowLp = new LinearLayout.LayoutParams(-1, -2);
+        btnRowLp.topMargin = dp(16);
+        box.addView(buttons, btnRowLp);
+
+        final AlertDialog dialog = builder.create();
+        TextView open = detailButton("Abrir no Stremio", () -> {
+            dialog.dismiss();
+            openInStremio(it);
+        });
+        buttons.addView(open);
+        buttons.addView(detailButton("Abrir UniTV", () -> openUniTv(it)), buttonLp());
+        buttons.addView(detailButton("Trailer", () -> openTrailer(it)), buttonLp());
+        buttons.addView(detailButton("Fechar", dialog::dismiss), buttonLp());
+
+        dialog.setView(box, dp(20), dp(16), dp(20), dp(12));
+        dialog.show();
+        open.requestFocus();
+    }
+
+    private void addDetailLine(LinearLayout box, String label, String value) {
+        if (value.isEmpty()) return;
+        TextView t = text(14, TEXT, Typeface.NORMAL);
+        SpannableStringBuilder sb = new SpannableStringBuilder(label + value);
+        sb.setSpan(new ForegroundColorSpan(TEXT_DIM), 0, label.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        t.setText(sb);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, -2);
+        lp.topMargin = dp(6);
+        box.addView(t, lp);
+    }
+
+    private LinearLayout.LayoutParams buttonLp() {
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, -2);
+        lp.leftMargin = dp(10);
+        return lp;
+    }
+
+    private TextView detailButton(String label, final Runnable action) {
+        final TextView b = text(16, TEXT, Typeface.BOLD);
+        final GradientDrawable bg = rounded(CARD, 8);
+        b.setText(label);
+        b.setBackground(bg);
+        b.setGravity(Gravity.CENTER);
+        b.setPadding(dp(16), dp(10), dp(16), dp(10));
+        b.setFocusable(true);
+        b.setClickable(true);
+        b.setOnFocusChangeListener((v, has) -> {
+            bg.setColor(has ? CARD_ON : CARD);
+            bg.setStroke(has ? dp(2) : 0, 0xFFFFFFFF);
+        });
+        b.setOnClickListener(v -> action.run());
+        return b;
+    }
+
+    // O UniTV só pesquisa por nome: abre o app e mostra o título para digitar/ditar lá.
+    private void openUniTv(Item it) {
+        Intent launch = getPackageManager().getLaunchIntentForPackage("com.global.unitviptv");
+        if (launch == null) launch = getPackageManager().getLeanbackLaunchIntentForPackage("com.global.unitviptv");
+        if (launch == null) {
+            Toast.makeText(this, "UniTV não encontrado nesta TV", Toast.LENGTH_LONG).show();
+            return;
+        }
+        launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        try {
+            startActivity(launch);
+            Toast.makeText(this, "Pesquise: " + it.title, Toast.LENGTH_LONG).show();
+        } catch (Exception e) {
+            Toast.makeText(this, "Não consegui abrir o UniTV", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    // Abre o app do YouTube da TV numa busca pelo trailer (sem tocar vídeo dentro do app).
+    private void openTrailer(Item it) {
+        String q = it.title + (it.year > 0 ? " " + it.year : "") + " trailer";
+        Intent view = new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/results?search_query=" + Uri.encode(q)));
+        view.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        try {
+            startActivity(view);
+        } catch (Exception e) {
+            Toast.makeText(this, "YouTube não encontrado nesta TV", Toast.LENGTH_LONG).show();
+        }
     }
 
     private void openInStremio(Item it) {

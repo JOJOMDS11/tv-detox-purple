@@ -72,6 +72,20 @@ jobs:
               ["releaseDate { year month day }"],
           ]
 
+          # Detalhes do popup (sinopse, diretor, elenco; em inglês, como o IMDb entrega).
+          # Também testados um a um; se algum for recusado, o resto continua funcionando.
+          DETAIL = [
+              ["plot { plotText { plainText } }"],
+              [
+                  'directors: credits(first: 2, filter: { categories: ["director"] }) { edges { node { name { nameText { text } } } } }',
+                  'directors: principalCredits(filter: { categories: ["director"] }) { credits { name { nameText { text } } } }',
+              ],
+              [
+                  'cast: credits(first: 5, filter: { categories: ["cast"] }) { edges { node { name { nameText { text } } } } }',
+                  'cast: principalCredits(filter: { categories: ["cast"] }) { credits { name { nameText { text } } } }',
+              ],
+          ]
+
           # Mesmas listas das páginas moviemeter e tvmeter do IMDb (mais populares da semana).
           CHARTS = {"topMovies": "MOST_POPULAR_MOVIES", "topSeries": "MOST_POPULAR_TV_SHOWS"}
           TOP_FIELDS = "id titleText { text } primaryImage { url } releaseYear { year } __EXTRA__"
@@ -128,6 +142,32 @@ jobs:
               return bool(year) and year > today.year
 
 
+          def credit_names(item, key, limit):
+              block = item.get(key)
+              names = []
+              if isinstance(block, dict):
+                  for edge in block.get("edges") or []:
+                      node = (edge or {}).get("node") or {}
+                      names.append(((node.get("name") or {}).get("nameText") or {}).get("text"))
+              elif isinstance(block, list):
+                  for group in block:
+                      for credit in (group or {}).get("credits") or []:
+                          names.append(((credit.get("name") or {}).get("nameText") or {}).get("text"))
+              clean = []
+              for n in names:
+                  if n and n not in clean:
+                      clean.append(n)
+              return clean[:limit]
+
+
+          def short_plot(item):
+              text = (((item.get("plot") or {}).get("plotText")) or {}).get("plainText") or ""
+              text = " ".join(text.split())
+              if len(text) <= 420:
+                  return text
+              return text[:420].rsplit(" ", 1)[0].rstrip(",;:") + "…"
+
+
           def make_title(item, imdb_id):
               title_text = item.get("titleText") or {}
               image = item.get("primaryImage") or {}
@@ -149,6 +189,9 @@ jobs:
                   "upcoming": is_upcoming(release, year),
                   "genres": extract_genres(item),
                   "poster": image.get("url") or "",
+                  "plot": short_plot(item),
+                  "directors": credit_names(item, "directors", 2),
+                  "cast": credit_names(item, "cast", 5),
                   "imdbUrl": "https://www.imdb.com/title/" + imdb_id + "/",
               }
 
@@ -223,9 +266,21 @@ jobs:
                       except Exception as error:
                           print("Campo recusado: " + frag + " -> " + str(error)[:120])
 
+              base = list(chosen)
+              for options in DETAIL:
+                  for frag in options:
+                      try:
+                          probe = TEMPLATE.replace("__EXTRA__", " ".join(chosen + [frag]))
+                          query(probe, {"userId": user_id, "first": 1, "after": None})
+                          chosen.append(frag)
+                          print("Detalhe ok: " + frag[:60])
+                          break
+                      except Exception as error:
+                          print("Detalhe recusado: " + frag[:60] + " -> " + str(error)[:120])
+
               titles = None
               last_error = None
-              for extra in (" ".join(chosen), ""):
+              for extra in (" ".join(chosen), " ".join(base), ""):
                   try:
                       titles = fetch_all(TEMPLATE.replace("__EXTRA__", extra), user_id)
                       print("Consulta usada: " + (extra or "básica"))
@@ -264,6 +319,9 @@ jobs:
                       tops[key] = previous_top.get(key) or []
                       print("Top 10 " + key + " indisponível; mantido o anterior (" + str(len(tops[key])) + " itens).")
 
+              with_plot = sum(1 for t in titles if t["plot"])
+              with_cast = sum(1 for t in titles if t["cast"])
+              print(f"{with_plot} de {len(titles)} com sinopse; {with_cast} com elenco.")
               with_genres = sum(1 for t in titles if t["genres"])
               with_rating = sum(1 for t in titles if t["rating"])
               with_meta = sum(1 for t in titles if t["metascore"])

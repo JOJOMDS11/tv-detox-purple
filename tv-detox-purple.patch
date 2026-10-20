@@ -1,0 +1,170 @@
+diff --git a/.github/workflows/sync-imdb-watchlist.yml b/.github/workflows/sync-imdb-watchlist.yml
+index 9f0f0e9..3ee7c2c 100644
+--- a/.github/workflows/sync-imdb-watchlist.yml
++++ b/.github/workflows/sync-imdb-watchlist.yml
+@@ -57,8 +57,11 @@ jobs:
+           """
+ 
+           VARIANTS = [
++              "titleType { id } ratingsSummary { aggregateRating } genres { genres { text } }",
++              "titleType { id } ratingsSummary { aggregateRating } titleGenres { genres { genre { text } } }",
+               "titleType { id } genres { genres { text } }",
+               "titleType { id } titleGenres { genres { genre { text } } }",
++              "titleType { id } ratingsSummary { aggregateRating }",
+               "titleType { id }",
+               "",
+           ]
+@@ -110,11 +113,13 @@ jobs:
+                       image = item.get("primaryImage") or {}
+                       year = item.get("releaseYear") or {}
+                       kind = item.get("titleType") or {}
++                      rating = (item.get("ratingsSummary") or {}).get("aggregateRating") or 0
+                       titles.append({
+                           "id": imdb_id,
+                           "title": title_text.get("text") or "",
+                           "year": year.get("year"),
+                           "type": kind.get("id") or "",
++                          "rating": rating,
+                           "genres": extract_genres(item),
+                           "poster": image.get("url") or "",
+                           "imdbUrl": "https://www.imdb.com/title/" + imdb_id + "/",
+@@ -151,7 +156,8 @@ jobs:
+                   raise RuntimeError("A IMDb não retornou títulos: " + str(last_error))
+ 
+               with_genres = sum(1 for t in titles if t["genres"])
+-              print(f"{with_genres} de {len(titles)} títulos com gênero.")
++              with_rating = sum(1 for t in titles if t["rating"])
++              print(f"{with_genres} de {len(titles)} títulos com gênero; {with_rating} com nota.")
+ 
+               output = {
+                   "source": "IMDb Watchlist",
+diff --git a/src/com/ansub/tvhome/ImdbBadge.java b/src/com/ansub/tvhome/ImdbBadge.java
+new file mode 100644
+index 0000000..a167e6a
+--- /dev/null
++++ b/src/com/ansub/tvhome/ImdbBadge.java
+@@ -0,0 +1,43 @@
++package com.ansub.tvhome;
++
++import android.graphics.Canvas;
++import android.graphics.ColorFilter;
++import android.graphics.Paint;
++import android.graphics.PixelFormat;
++import android.graphics.Rect;
++import android.graphics.RectF;
++import android.graphics.Typeface;
++import android.graphics.drawable.Drawable;
++
++// Selo amarelo "IMDb" desenhado em código: sem imagem no APK e sem custo de decodificação.
++final class ImdbBadge extends Drawable {
++    private final Paint bg = new Paint(Paint.ANTI_ALIAS_FLAG);
++    private final Paint tx = new Paint(Paint.ANTI_ALIAS_FLAG);
++    private final RectF r = new RectF();
++
++    ImdbBadge() {
++        bg.setColor(0xFFF5C518);
++        tx.setColor(0xFF000000);
++        tx.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD));
++        tx.setTextAlign(Paint.Align.CENTER);
++    }
++
++    @Override
++    public void draw(Canvas c) {
++        Rect b = getBounds();
++        float w = b.width();
++        float h = w * 0.5f;
++        float top = b.top + (b.height() - h) / 2f;
++        r.set(b.left, top, b.left + w, top + h);
++        c.drawRoundRect(r, h * 0.18f, h * 0.18f, bg);
++        tx.setTextSize(h * 0.62f);
++        Paint.FontMetrics fm = tx.getFontMetrics();
++        c.drawText("IMDb", r.centerX(), r.centerY() - (fm.ascent + fm.descent) / 2f, tx);
++    }
++
++    @Override public void setAlpha(int a) { bg.setAlpha(a); tx.setAlpha(a); }
++    @Override public void setColorFilter(ColorFilter cf) { bg.setColorFilter(cf); tx.setColorFilter(cf); }
++    @Override public int getOpacity() { return PixelFormat.TRANSLUCENT; }
++    @Override public int getIntrinsicWidth() { return 100; }
++    @Override public int getIntrinsicHeight() { return 100; }
++}
+diff --git a/src/com/ansub/tvhome/MainActivity.java b/src/com/ansub/tvhome/MainActivity.java
+index 8287d5b..368926b 100644
+--- a/src/com/ansub/tvhome/MainActivity.java
++++ b/src/com/ansub/tvhome/MainActivity.java
+@@ -73,6 +73,7 @@ public class MainActivity extends Activity {
+     private static final String PLAY_STORE = "com.android.vending";
+     private static final String SETTINGS = "settings";
+     private static final String ADD = "add";
++    private static final String WATCH = "watchlist";
+     private static final String[] EDIT_ITEMS = {"Move", "Replace", "Remove from home", "Uninstall"};
+     private static final String[] EDIT_ITEMS_SYSTEM = {"Move", "Replace", "Remove from home", "App info"};
+     private static final int PER_ROW = 6, MAX_INPUTS = 4;
+@@ -335,18 +336,20 @@ public class MainActivity extends Activity {
+         }
+         // The "+ App" tile sits right after the last app, in the top grid.
+         int plusAt = rowApps.size();
+-        addTile(root, ADD, Strings.t("Ver lista"), null, LineIcon.PLUS, null, gridX(plusAt), gridY(plusAt), w, h);
++        addTile(root, ADD, Strings.t("+ App"), null, LineIcon.PLUS, null, gridX(plusAt), gridY(plusAt), w, h);
+ 
+         // Bottom row: Play Store, HDMI inputs, Settings and Add app, six at most.
+         int col = 0;
+         boolean store = !apps.contains(PLAY_STORE) && launchIntent(pm, PLAY_STORE) != null;
+         List<TvInputInfo> inputs = hdmiInputs();
+-        int room = PER_ROW - 1 - (store ? 1 : 0);
++        int room = PER_ROW - 2 - (store ? 1 : 0);
+         if (inputs.size() > room) inputs = inputs.subList(0, room);
+         if (store)
+             addTile(root, PLAY_STORE, "Play Store", null, LineIcon.PLAY, null, m + col++ * (w + g), bottomTop, w, h);
+         for (TvInputInfo in : inputs)
+             addTile(root, in.getId(), inputLabel(in), null, LineIcon.HDMI, null, m + col++ * (w + g), bottomTop, w, h);
++        // Watchlist do IMDb, logo antes de Configurações.
++        addTile(root, WATCH, "Ver lista", null, null, new ImdbBadge(), m + col++ * (w + g), bottomTop, w, h);
+         addTile(root, SETTINGS, Strings.t("Settings"), null, LineIcon.SETTINGS, null, m + col * (w + g), bottomTop, w, h);
+ 
+         // Plain icons at the top right, level with the date: any settings shortcuts picked, then the
+@@ -493,6 +496,9 @@ public class MainActivity extends Activity {
+     private void open(String key) {
+         Intent i;
+         if (ADD.equals(key)) {
++            showAddMenu(-1);
++            return;
++        } else if (WATCH.equals(key)) {
+             try { startActivity(new Intent(this, WatchlistActivity.class)); } catch (Exception ignored) {}
+             return;
+         } else if (SETTINGS.equals(key)) {
+@@ -828,7 +834,7 @@ public class MainActivity extends Activity {
+             return;
+         }
+         final List<String> pkgs = new ArrayList<>(byLabel.values());
+-        String title = replaceIndex < 0 ? Strings.t("Ver lista")
++        String title = replaceIndex < 0 ? "Apps instalados"
+                 : String.format(Strings.t("Replace %s"), labelOf(rowApps.get(replaceIndex)));
+         panel(title, new ArrayList<>(byLabel.keySet()), pkgs, which -> {
+             if (replaceIndex < 0) {
+diff --git a/src/com/ansub/tvhome/WatchlistActivity.java b/src/com/ansub/tvhome/WatchlistActivity.java
+index c80abe3..3db3453 100644
+--- a/src/com/ansub/tvhome/WatchlistActivity.java
++++ b/src/com/ansub/tvhome/WatchlistActivity.java
+@@ -385,7 +385,9 @@ public class WatchlistActivity extends Activity {
+ 
+     private void refreshIfStale() {
+         File f = new File(getFilesDir(), CACHE_FILE);
+-        if (f.exists() && !all.isEmpty() && System.currentTimeMillis() - f.lastModified() < MAX_AGE_MS) return;
++        // Cache antigo sem gênero/nota (JSON de antes da atualização) é refeito na hora, sem esperar os 30 min.
++        if (f.exists() && !all.isEmpty() && hasMeta()
++                && System.currentTimeMillis() - f.lastModified() < MAX_AGE_MS) return;
+         pool.execute(() -> {
+             try {
+                 HttpURLConnection c = (HttpURLConnection) new URL(JSON_URL).openConnection();
+@@ -411,6 +413,11 @@ public class WatchlistActivity extends Activity {
+         });
+     }
+ 
++    private boolean hasMeta() {
++        for (Item it : all) if (it.rating > 0 || !it.genres.isEmpty()) return true;
++        return false;
++    }
++
+     private static String readAll(InputStream in) throws Exception {
+         try {
+             ByteArrayOutputStream out = new ByteArrayOutputStream(131072);

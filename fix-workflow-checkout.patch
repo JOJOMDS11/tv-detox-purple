@@ -1,0 +1,13 @@
+diff --git a/.github/workflows/sync-imdb-watchlist.yml b/.github/workflows/sync-imdb-watchlist.yml
+index 4ff8300..3c47143 100644
+--- a/.github/workflows/sync-imdb-watchlist.yml
++++ b/.github/workflows/sync-imdb-watchlist.yml
+@@ -200,7 +200,7 @@ jobs:
+           git fetch origin watchlist-data || true
+ 
+           if git show-ref --verify --quiet refs/remotes/origin/watchlist-data; then
+-            git checkout -B watchlist-data origin/watchlist-data
++            git checkout -f -B watchlist-data origin/watchlist-data
+           else
+             git checkout --orphan watchlist-data
+             git rm -rf --cached . >/dev/null 2>&1 || true

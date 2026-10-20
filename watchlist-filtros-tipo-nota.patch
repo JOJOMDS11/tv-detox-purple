@@ -1,0 +1,289 @@
+diff --git a/src/com/ansub/tvhome/WatchlistActivity.java b/src/com/ansub/tvhome/WatchlistActivity.java
+index c9bbfd5..77e8890 100644
+--- a/src/com/ansub/tvhome/WatchlistActivity.java
++++ b/src/com/ansub/tvhome/WatchlistActivity.java
+@@ -104,13 +104,16 @@ public class WatchlistActivity extends Activity {
+         double rating;
+         int meta;
+         boolean series;
++        int kind; // 1 filme, 2 filme pra TV, 3 série, 0 outros
+         List<String> genres = new ArrayList<>();
+     }
+ 
++    private static final int T_GENRE = 0, T_YEAR = 1, T_KIND = 2, T_SORT = 3;
++
+     private static final class Chip {
++        int type;
+         String genre = "";
+-        int decade = -1;
+-        boolean year;
++        int value = -1; // década, tipo ou ordem
+         TextView view;
+         GradientDrawable bg;
+     }
+@@ -122,6 +125,10 @@ public class WatchlistActivity extends Activity {
+     private final List<Chip> chips = new ArrayList<>();
+     private String current = ALL;
+     private int currentDecade = -1;
++    private int currentKind = 0;
++    private int currentSort = 0;
++    private final int[] kindCounts = new int[4];
++    private LinearLayout kindRow;
+     private final Map<Integer, Integer> decadeCounts = new HashMap<>();
+     private final List<Integer> decadeList = new ArrayList<>();
+     private LinearLayout yearRow;
+@@ -183,7 +190,7 @@ public class WatchlistActivity extends Activity {
+         int padX = 40;
+         int gap = 12;
+         int cellW = (wdp - 2 * padX - gap * (COLS - 1)) / COLS;
+-        int cellH = (hdp - 216) / ROWS;
++        int cellH = (hdp - 238) / ROWS;
+         int pw = Math.min((cellH - 16) * 2 / 3, cellW * 52 / 100);
+         posterW = dp(pw);
+ 
+@@ -206,7 +213,7 @@ public class WatchlistActivity extends Activity {
+         header.addView(headerCount);
+         header.addView(spacer, new LinearLayout.LayoutParams(0, 1, 1f));
+         header.addView(pageView);
+-        main.addView(header, new LinearLayout.LayoutParams(-1, dp(44)));
++        main.addView(header, new LinearLayout.LayoutParams(-1, dp(40)));
+ 
+         HorizontalScrollView scroll = new HorizontalScrollView(this);
+         scroll.setHorizontalScrollBarEnabled(false);
+@@ -216,7 +223,7 @@ public class WatchlistActivity extends Activity {
+         chipRow.setOrientation(LinearLayout.HORIZONTAL);
+         chipRow.setPadding(dp(4), dp(4), dp(4), dp(4));
+         scroll.addView(chipRow, new FrameLayout.LayoutParams(-2, -1));
+-        LinearLayout.LayoutParams scrollLp = new LinearLayout.LayoutParams(-1, dp(46));
++        LinearLayout.LayoutParams scrollLp = new LinearLayout.LayoutParams(-1, dp(40));
+         scrollLp.topMargin = dp(4);
+         scrollLp.bottomMargin = dp(2);
+         main.addView(scroll, scrollLp);
+@@ -229,10 +236,22 @@ public class WatchlistActivity extends Activity {
+         yearRow.setOrientation(LinearLayout.HORIZONTAL);
+         yearRow.setPadding(dp(4), dp(2), dp(4), dp(2));
+         yscroll.addView(yearRow, new FrameLayout.LayoutParams(-2, -1));
+-        LinearLayout.LayoutParams yearLp = new LinearLayout.LayoutParams(-1, dp(38));
+-        yearLp.bottomMargin = dp(10);
++        LinearLayout.LayoutParams yearLp = new LinearLayout.LayoutParams(-1, dp(34));
++        yearLp.bottomMargin = dp(2);
+         main.addView(yscroll, yearLp);
+ 
++        HorizontalScrollView kscroll = new HorizontalScrollView(this);
++        kscroll.setHorizontalScrollBarEnabled(false);
++        kscroll.setOverScrollMode(View.OVER_SCROLL_NEVER);
++        kscroll.setClipToPadding(false);
++        kindRow = new LinearLayout(this);
++        kindRow.setOrientation(LinearLayout.HORIZONTAL);
++        kindRow.setPadding(dp(4), dp(2), dp(4), dp(2));
++        kscroll.addView(kindRow, new FrameLayout.LayoutParams(-2, -1));
++        LinearLayout.LayoutParams kindLp = new LinearLayout.LayoutParams(-1, dp(34));
++        kindLp.bottomMargin = dp(10);
++        main.addView(kscroll, kindLp);
++
+         LinearLayout grid = new LinearLayout(this);
+         grid.setOrientation(LinearLayout.VERTICAL);
+         for (int r = 0; r < ROWS; r++) {
+@@ -361,24 +380,48 @@ public class WatchlistActivity extends Activity {
+     private void rebuildChips() {
+         chipRow.removeAllViews();
+         yearRow.removeAllViews();
++        kindRow.removeAllViews();
+         chips.clear();
+         for (String g : genreNames) {
+             Chip chip = new Chip();
++            chip.type = T_GENRE;
+             chip.genre = g;
+             Integer n = g.equals(ALL) ? Integer.valueOf(all.size()) : genreCounts.get(g);
+-            addChip(chipRow, chip, n == null ? g : g + "  " + n, 16);
++            addChip(chipRow, chip, n == null ? g : g + "  " + n, 16, 0);
+         }
+         for (int d : decadeList) {
+             Chip chip = new Chip();
+-            chip.year = true;
+-            chip.decade = d;
++            chip.type = T_YEAR;
++            chip.value = d;
+             Integer n = d == -1 ? Integer.valueOf(all.size()) : decadeCounts.get(d);
+-            addChip(yearRow, chip, decadeLabel(d) + (n == null ? "" : "  " + n), 14);
++            addChip(yearRow, chip, decadeLabel(d) + (n == null ? "" : "  " + n), 14, 0);
+         }
++        addKindChip(0, "Todos os tipos", all.size());
++        addKindChip(1, "Filmes", kindCounts[1]);
++        addKindChip(2, "Filmes pra TV", kindCounts[2]);
++        addKindChip(3, "Séries", kindCounts[3]);
++        addSortChip(0, "Ordem padrão", 24);
++        addSortChip(1, "Maior nota IMDb", 0);
++        addSortChip(2, "Maior Metascore", 0);
+         refreshChips();
+     }
+ 
+-    private void addChip(LinearLayout row, final Chip chip, String label, int sp) {
++    private void addKindChip(int kind, String label, int n) {
++        if (kind != 0 && n == 0) return;
++        Chip chip = new Chip();
++        chip.type = T_KIND;
++        chip.value = kind;
++        addChip(kindRow, chip, kind == 0 ? label : label + "  " + n, 14, 0);
++    }
++
++    private void addSortChip(int sort, String label, int gapDp) {
++        Chip chip = new Chip();
++        chip.type = T_SORT;
++        chip.value = sort;
++        addChip(kindRow, chip, label, 14, gapDp);
++    }
++
++    private void addChip(LinearLayout row, final Chip chip, String label, int sp, int gapDp) {
+         chip.bg = rounded(CARD, 20);
+         TextView v = text(sp, TEXT_DIM, Typeface.NORMAL);
+         v.setText(label);
+@@ -391,8 +434,12 @@ public class WatchlistActivity extends Activity {
+         v.setTag(chip);
+         v.setOnFocusChangeListener((view, has) -> styleChip(chip, has));
+         v.setOnClickListener(view -> {
+-            if (chip.year) currentDecade = chip.decade;
+-            else current = chip.genre;
++            switch (chip.type) {
++                case T_YEAR: currentDecade = chip.value; break;
++                case T_KIND: currentKind = chip.value; break;
++                case T_SORT: currentSort = chip.value; break;
++                default: current = chip.genre;
++            }
+             page = 0;
+             refreshChips();
+             filter();
+@@ -401,11 +448,29 @@ public class WatchlistActivity extends Activity {
+         });
+         chip.view = v;
+         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, -1);
++        lp.leftMargin = dp(gapDp);
+         lp.rightMargin = dp(8);
+         row.addView(v, lp);
+         chips.add(chip);
+     }
+ 
++    private boolean isActive(Chip c) {
++        switch (c.type) {
++            case T_YEAR: return c.value == currentDecade;
++            case T_KIND: return c.value == currentKind;
++            case T_SORT: return c.value == currentSort;
++            default: return c.genre.equals(current);
++        }
++    }
++
++    private static int rowOf(Chip c) {
++        return c.type == T_GENRE ? 0 : c.type == T_YEAR ? 1 : 2;
++    }
++
++    private static String kindLabel(int k) {
++        return k == 1 ? "Filmes" : k == 2 ? "Filmes pra TV" : "Séries";
++    }
++
+     private static int bucket(int year) {
+         return year <= 0 ? -2 : year < 1970 ? 1960 : year / 10 * 10;
+     }
+@@ -419,7 +484,7 @@ public class WatchlistActivity extends Activity {
+     }
+ 
+     private void styleChip(Chip c, boolean focused) {
+-        boolean active = c.year ? c.decade == currentDecade : c.genre.equals(current);
++        boolean active = isActive(c);
+         c.bg.setColor(focused ? CARD_ON : active ? 0x33FFFFFF : CARD);
+         c.bg.setStroke(focused ? dp(2) : 0, 0xFFFFFFFF);
+         c.view.setTextColor(active || focused ? TEXT : TEXT_DIM);
+@@ -502,6 +567,7 @@ public class WatchlistActivity extends Activity {
+             it.poster = poster.equals("null") ? "" : poster;
+             String type = o.optString("type");
+             it.series = type.equals("tvSeries") || type.equals("tvMiniSeries");
++            it.kind = type.equals("movie") ? 1 : type.equals("tvMovie") ? 2 : it.series ? 3 : 0;
+             JSONArray g = o.optJSONArray("genres");
+             if (g != null) {
+                 for (int k = 0; k < g.length(); k++) {
+@@ -546,6 +612,9 @@ public class WatchlistActivity extends Activity {
+         decadeList.add(-1);
+         decadeList.addAll(ds);
+         if (currentDecade != -1 && !decadeCounts.containsKey(currentDecade)) currentDecade = -1;
++        java.util.Arrays.fill(kindCounts, 0);
++        for (Item it : all) kindCounts[it.kind]++;
++        if (currentKind != 0 && kindCounts[currentKind] == 0) currentKind = 0;
+         rebuildChips();
+         filter();
+         render();
+@@ -557,8 +626,11 @@ public class WatchlistActivity extends Activity {
+         for (Item it : all) {
+             if (!current.equals(ALL) && !it.genres.contains(current)) continue;
+             if (currentDecade != -1 && bucket(it.year) != currentDecade) continue;
++            if (currentKind != 0 && it.kind != currentKind) continue;
+             shown.add(it);
+         }
++        if (currentSort == 1) Collections.sort(shown, (x, y) -> Double.compare(y.rating, x.rating));
++        else if (currentSort == 2) Collections.sort(shown, (x, y) -> Integer.compare(y.meta, x.meta));
+         int pages = pageCount();
+         if (page >= pages) page = pages - 1;
+         if (page < 0) page = 0;
+@@ -582,6 +654,7 @@ public class WatchlistActivity extends Activity {
+                 bindMeta(i, it);
+                 String meta = it.year > 0 ? String.valueOf(it.year) : "";
+                 if (it.series) meta = meta.isEmpty() ? "Série" : "Série · " + meta;
++                else if (it.kind == 2) meta = meta.isEmpty() ? "Filme TV" : "Filme TV · " + meta;
+                 metas[i].setText(meta);
+                 genreViews[i].setText(joinGenres(it));
+                 bindPoster(posters[i], it, gen);
+@@ -636,6 +709,9 @@ public class WatchlistActivity extends Activity {
+     private void updateHeader() {
+         String title = current.equals(ALL) ? "Watchlist" : current;
+         if (currentDecade != -1) title += " · " + decadeLabel(currentDecade);
++        if (currentKind != 0) title += " · " + kindLabel(currentKind);
++        if (currentSort == 1) title += " · nota IMDb";
++        else if (currentSort == 2) title += " · Metascore";
+         headerTitle.setText(title);
+         headerCount.setText(all.isEmpty() ? "" : String.valueOf(shown.size()));
+     }
+@@ -730,10 +806,9 @@ public class WatchlistActivity extends Activity {
+         if (i >= 0 && i < PER_PAGE && cards[i].getVisibility() == View.VISIBLE) cards[i].requestFocus();
+     }
+ 
+-    private void focusChip(boolean year) {
++    private void focusRow(int row) {
+         for (Chip c : chips) {
+-            boolean active = c.year ? c.decade == currentDecade : c.genre.equals(current);
+-            if (c.year == year && active) {
++            if (rowOf(c) == row && isActive(c)) {
+                 c.view.requestFocus();
+                 return;
+             }
+@@ -771,18 +846,20 @@ public class WatchlistActivity extends Activity {
+                 break;
+             case KeyEvent.KEYCODE_DPAD_UP:
+                 if (idx >= 0 && idx < COLS) {
+-                    focusChip(true);
++                    focusRow(2);
+                     return true;
+                 }
+                 if (onChip) {
+-                    if (((Chip) f.getTag()).year) focusChip(false);
++                    int r = rowOf((Chip) f.getTag());
++                    if (r > 0) focusRow(r - 1);
+                     return true;
+                 }
+                 break;
+             case KeyEvent.KEYCODE_DPAD_DOWN:
+                 if (onChip) {
+-                    if (((Chip) f.getTag()).year) focusCard(0);
+-                    else focusChip(true);
++                    int r = rowOf((Chip) f.getTag());
++                    if (r < 2) focusRow(r + 1);
++                    else focusCard(0);
+                     return true;
+                 }
+                 break;
+@@ -799,7 +876,7 @@ public class WatchlistActivity extends Activity {
+                 if (page > 0) goToPage(page - 1, 0, false);
+                 return true;
+             case KeyEvent.KEYCODE_MENU:
+-                focusChip(false);
++                focusRow(0);
+                 return true;
+             default:
+                 break;

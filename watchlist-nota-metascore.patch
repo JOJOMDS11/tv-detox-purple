@@ -1,0 +1,181 @@
+diff --git a/.github/workflows/sync-imdb-watchlist.yml b/.github/workflows/sync-imdb-watchlist.yml
+index 3ee7c2c..4ff8300 100644
+--- a/.github/workflows/sync-imdb-watchlist.yml
++++ b/.github/workflows/sync-imdb-watchlist.yml
+@@ -56,14 +56,12 @@ jobs:
+           }
+           """
+ 
+-          VARIANTS = [
+-              "titleType { id } ratingsSummary { aggregateRating } genres { genres { text } }",
+-              "titleType { id } ratingsSummary { aggregateRating } titleGenres { genres { genre { text } } }",
+-              "titleType { id } genres { genres { text } }",
+-              "titleType { id } titleGenres { genres { genre { text } } }",
+-              "titleType { id } ratingsSummary { aggregateRating }",
+-              "titleType { id }",
+-              "",
++          # Campos opcionais: cada um é testado sozinho; os que o IMDb recusar ficam de fora.
++          OPTIONAL = [
++              ["titleType { id }"],
++              ["ratingsSummary { aggregateRating }"],
++              ["metacritic { metascore { score } }"],
++              ["genres { genres { text } }", "titleGenres { genres { genre { text } } }"],
+           ]
+ 
+ 
+@@ -114,12 +112,14 @@ jobs:
+                       year = item.get("releaseYear") or {}
+                       kind = item.get("titleType") or {}
+                       rating = (item.get("ratingsSummary") or {}).get("aggregateRating") or 0
++                      metascore = ((item.get("metacritic") or {}).get("metascore") or {}).get("score") or 0
+                       titles.append({
+                           "id": imdb_id,
+                           "title": title_text.get("text") or "",
+                           "year": year.get("year"),
+                           "type": kind.get("id") or "",
+                           "rating": rating,
++                          "metascore": metascore,
+                           "genres": extract_genres(item),
+                           "poster": image.get("url") or "",
+                           "imdbUrl": "https://www.imdb.com/title/" + imdb_id + "/",
+@@ -141,23 +141,36 @@ jobs:
+               )
+               user_id = profile["userProfile"]["userId"]
+ 
++              chosen = []
++              for options in OPTIONAL:
++                  for frag in options:
++                      try:
++                          probe = TEMPLATE.replace("__EXTRA__", " ".join(chosen + [frag]))
++                          query(probe, {"userId": user_id, "first": 1, "after": None})
++                          chosen.append(frag)
++                          print("Campo ok: " + frag)
++                          break
++                      except Exception as error:
++                          print("Campo recusado: " + frag + " -> " + str(error)[:120])
++
+               titles = None
+               last_error = None
+-              for extra in VARIANTS:
++              for extra in (" ".join(chosen), ""):
+                   try:
+                       titles = fetch_all(TEMPLATE.replace("__EXTRA__", extra), user_id)
+                       print("Consulta usada: " + (extra or "básica"))
+                       break
+                   except Exception as error:
+                       last_error = error
+-                      print("Consulta falhou (" + (extra or "básica") + "): " + str(error))
++                      print("Consulta falhou: " + str(error)[:200])
+ 
+               if not titles:
+                   raise RuntimeError("A IMDb não retornou títulos: " + str(last_error))
+ 
+               with_genres = sum(1 for t in titles if t["genres"])
+               with_rating = sum(1 for t in titles if t["rating"])
+-              print(f"{with_genres} de {len(titles)} títulos com gênero; {with_rating} com nota.")
++              with_meta = sum(1 for t in titles if t["metascore"])
++              print(f"{with_genres} de {len(titles)} títulos com gênero; {with_rating} com nota; {with_meta} com metascore.")
+ 
+               output = {
+                   "source": "IMDb Watchlist",
+diff --git a/src/com/ansub/tvhome/WatchlistActivity.java b/src/com/ansub/tvhome/WatchlistActivity.java
+index 4115e17..b5d3afd 100644
+--- a/src/com/ansub/tvhome/WatchlistActivity.java
++++ b/src/com/ansub/tvhome/WatchlistActivity.java
+@@ -102,6 +102,7 @@ public class WatchlistActivity extends Activity {
+         String poster = "";
+         int year;
+         double rating;
++        int meta;
+         boolean series;
+         List<String> genres = new ArrayList<>();
+     }
+@@ -133,6 +134,8 @@ public class WatchlistActivity extends Activity {
+     private final ImageView[] posters = new ImageView[PER_PAGE];
+     private final TextView[] titles = new TextView[PER_PAGE];
+     private final TextView[] ratings = new TextView[PER_PAGE];
++    private final TextView[] metaViews = new TextView[PER_PAGE];
++    private final GradientDrawable[] metaBgs = new GradientDrawable[PER_PAGE];
+     private final TextView[] metas = new TextView[PER_PAGE];
+     private final TextView[] genreViews = new TextView[PER_PAGE];
+ 
+@@ -280,7 +283,19 @@ public class WatchlistActivity extends Activity {
+         poster.setScaleType(ImageView.ScaleType.CENTER_CROP);
+         poster.setBackground(rounded(0x22FFFFFF, 8));
+         poster.setClipToOutline(true);
+-        inner.addView(poster, new LinearLayout.LayoutParams(dp(pw), -1));
++        FrameLayout posterBox = new FrameLayout(this);
++        posterBox.addView(poster, new FrameLayout.LayoutParams(-1, -1));
++        // Metascore: selo colorido no canto do pôster (verde 61+, amarelo 40-60, vermelho abaixo).
++        TextView metaView = text(11, TEXT, Typeface.BOLD);
++        GradientDrawable metaBg = rounded(0xFF2E9E3E, 4);
++        metaView.setBackground(metaBg);
++        metaView.setGravity(Gravity.CENTER);
++        metaView.setPadding(dp(4), dp(1), dp(4), dp(1));
++        metaView.setVisibility(View.GONE);
++        FrameLayout.LayoutParams metaLp = new FrameLayout.LayoutParams(-2, -2, Gravity.START | Gravity.TOP);
++        metaLp.setMargins(dp(3), dp(3), 0, 0);
++        posterBox.addView(metaView, metaLp);
++        inner.addView(posterBox, new LinearLayout.LayoutParams(dp(pw), -1));
+ 
+         LinearLayout col = new LinearLayout(this);
+         col.setOrientation(LinearLayout.VERTICAL);
+@@ -312,6 +327,8 @@ public class WatchlistActivity extends Activity {
+ 
+         cards[index] = card;
+         posters[index] = poster;
++        metaViews[index] = metaView;
++        metaBgs[index] = metaBg;
+         titles[index] = title;
+         ratings[index] = rating;
+         metas[index] = meta;
+@@ -453,7 +470,7 @@ public class WatchlistActivity extends Activity {
+     }
+ 
+     private boolean hasMeta() {
+-        for (Item it : all) if (it.rating > 0 || !it.genres.isEmpty()) return true;
++        for (Item it : all) if (it.rating > 0 || it.meta > 0 || !it.genres.isEmpty()) return true;
+         return false;
+     }
+ 
+@@ -480,6 +497,7 @@ public class WatchlistActivity extends Activity {
+             it.year = o.optInt("year", 0);
+             it.rating = o.optDouble("rating", 0);
+             if (Double.isNaN(it.rating)) it.rating = 0;
++            it.meta = o.optInt("metascore", 0);
+             String poster = o.optString("poster");
+             it.poster = poster.equals("null") ? "" : poster;
+             String type = o.optString("type");
+@@ -561,6 +579,7 @@ public class WatchlistActivity extends Activity {
+                 cards[i].setFocusable(true);
+                 titles[i].setText(it.title);
+                 bindRating(ratings[i], it);
++                bindMeta(i, it);
+                 String meta = it.year > 0 ? String.valueOf(it.year) : "";
+                 if (it.series) meta = meta.isEmpty() ? "Série" : "Série · " + meta;
+                 metas[i].setText(meta);
+@@ -571,6 +590,7 @@ public class WatchlistActivity extends Activity {
+                 cards[i].setFocusable(false);
+                 posters[i].setTag(null);
+                 posters[i].setImageDrawable(null);
++                metaViews[i].setVisibility(View.GONE);
+             }
+         }
+         pageView.setText(shown.isEmpty() ? "" : (page + 1) + " / " + pageCount());
+@@ -594,6 +614,16 @@ public class WatchlistActivity extends Activity {
+         view.setText(sb);
+     }
+ 
++    private void bindMeta(int i, Item it) {
++        if (it.meta <= 0) {
++            metaViews[i].setVisibility(View.GONE);
++            return;
++        }
++        metaBgs[i].setColor(it.meta >= 61 ? 0xFF2E9E3E : it.meta >= 40 ? 0xFFC99A00 : 0xFFC62828);
++        metaViews[i].setText(String.valueOf(it.meta));
++        metaViews[i].setVisibility(View.VISIBLE);
++    }
++
+     private static String joinGenres(Item it) {
+         StringBuilder sb = new StringBuilder();
+         for (int i = 0; i < it.genres.size() && i < 3; i++) {
