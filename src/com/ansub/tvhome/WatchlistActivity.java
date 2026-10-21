@@ -1532,17 +1532,15 @@ public class WatchlistActivity extends Activity {
                 : "stremio:///detail/movie/" + it.id + "/" + it.id;
         Intent view = new Intent(Intent.ACTION_VIEW, Uri.parse(uri));
         view.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        try {
-            startActivity(view);
+        if (view.resolveActivity(getPackageManager()) != null) {
+            StremioReset.start(this, view);
             return;
-        } catch (Exception ignored) {}
+        }
         Intent launch = stremioLaunch();
         if (launch != null) {
             launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            try {
-                startActivity(launch);
-                return;
-            } catch (Exception ignored) {}
+            StremioReset.start(this, launch);
+            return;
         }
         Toast.makeText(this, "Stremio não encontrado", Toast.LENGTH_LONG).show();
     }

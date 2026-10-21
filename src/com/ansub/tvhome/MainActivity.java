@@ -517,6 +517,10 @@ public class MainActivity extends Activity {
             if (i == null) return;
         }
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        if (StremioReset.PACKAGE.equals(key)) {
+            StremioReset.start(this, i);
+            return;
+        }
         try { startActivity(i); } catch (Exception ignored) {}
     }
 
