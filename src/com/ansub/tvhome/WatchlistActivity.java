@@ -17,10 +17,12 @@ import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.text.Editable;
 import android.text.InputType;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.RelativeSizeSpan;
 import android.util.DisplayMetrics;
@@ -900,7 +902,21 @@ public class WatchlistActivity extends Activity {
         builder.setPositiveButton("Buscar", (dialog, which) -> applySearch(input.getText().toString()));
         builder.setNegativeButton("Limpar", (dialog, which) -> applySearch(""));
         final AlertDialog dialog = builder.create();
-        dialog.setView(input, dp(24), dp(8), dp(24), dp(8));
+        final LinearLayout box = new LinearLayout(builder.getContext());
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.addView(input, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        final LinearLayout suggestions = new LinearLayout(builder.getContext());
+        suggestions.setOrientation(LinearLayout.VERTICAL);
+        box.addView(suggestions, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        dialog.setView(box, dp(24), dp(8), dp(24), dp(8));
+        input.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override public void afterTextChanged(Editable s) {
+                fillSuggestions(suggestions, s.toString(), dialog);
+            }
+        });
+        fillSuggestions(suggestions, query, dialog);
         input.setOnEditorActionListener((v, actionId, event) -> {
             applySearch(input.getText().toString());
             dialog.dismiss();
@@ -909,6 +925,49 @@ public class WatchlistActivity extends Activity {
         dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
         dialog.show();
         input.requestFocus();
+    }
+
+    private void fillSuggestions(LinearLayout box, String text, final AlertDialog dialog) {
+        box.removeAllViews();
+        String[] tk = tokens(text);
+        if (tk.length == 0) return;
+        List<Item> hits = new ArrayList<>();
+        Set<String> seen = new LinkedHashSet<>();
+        for (int pass = 0; pass < 2 && hits.size() < 5; pass++) {
+            for (Item it : all) {
+                if (hits.size() >= 5) break;
+                boolean ok = true;
+                for (String t : tk) {
+                    if (!it.norm.contains(t)) {
+                        ok = false;
+                        break;
+                    }
+                }
+                if (!ok) continue;
+                if ((pass == 0) != it.norm.startsWith(tk[0])) continue;
+                if (seen.add(it.norm)) hits.add(it);
+            }
+        }
+        for (final Item it : hits) {
+            final TextView row = new TextView(box.getContext());
+            row.setText(it.year > 0 ? it.title + " (" + it.year + ")" : it.title);
+            row.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
+            row.setTextColor(TEXT);
+            row.setSingleLine(true);
+            row.setEllipsize(TextUtils.TruncateAt.END);
+            row.setPadding(dp(12), dp(10), dp(12), dp(10));
+            row.setFocusable(true);
+            row.setClickable(true);
+            row.setOnFocusChangeListener((v, focused) -> {
+                row.setBackground(focused ? rounded(MENU_FOCUS, 6) : null);
+                row.setTextColor(focused ? MENU_TEXT : TEXT);
+            });
+            row.setOnClickListener(v -> {
+                applySearch(it.title);
+                dialog.dismiss();
+            });
+            box.addView(row, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        }
     }
 
     private void applySearch(String text) {
