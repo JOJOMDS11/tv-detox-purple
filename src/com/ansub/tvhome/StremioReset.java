@@ -9,6 +9,12 @@ import android.os.Looper;
 final class StremioReset {
     static final String PACKAGE = "com.stremio.one";
     private static final long DELAY_MS = 400;
+    private static final String[] FREE_MEMORY = {
+        "com.netflix.ninja",
+        "com.globo.globotv",
+        "tv.pluto.android",
+        "com.google.android.youtube.tv"
+    };
 
     private StremioReset() {}
 
@@ -18,6 +24,7 @@ final class StremioReset {
         if (am != null) {
             try {
                 am.killBackgroundProcesses(PACKAGE);
+                for (String pkg : FREE_MEMORY) am.killBackgroundProcesses(pkg);
                 killed = true;
             } catch (Exception ignored) {}
         }
