@@ -1,0 +1,22 @@
+# Vercel
+.vercel
+
+# Node
+node_modules/
+npm-debug.log
+package-lock.json
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+.vercel

@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎮 Emoji Converter - HaxBall DreamTeam</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .emoji-input {
+            font-size: 24px !important;
+            text-align: center;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.3s;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .result {
+            background: #f8f9fa;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .result h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .code-display {
+            background: #667eea;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 10px 0;
+            word-break: break-all;
+        }
+
+        .copy-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-danger {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .examples {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .examples h4 {
+            color: #856404;
+            margin-bottom: 15px;
+        }
+
+        .example-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            margin: 5px 0;
+        }
+
+        .example-emoji {
+            font-size: 24px;
+        }
+
+        .example-code {
+            font-family: 'Courier New', monospace;
+            background: #f1f1f1;
+            padding: 5px 10px;
+            border-radius: 3px;
+        }
+
+        .saved-history {
+            margin-top: 30px;
+            padding: 20px;
+            background: #e8f4f8;
+            border-radius: 10px;
+        }
+
+        .saved-history h4 {
+            color: #0c5460;
+            margin-bottom: 15px;
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            background: white;
+            border-radius: 5px;
+            margin: 3px 0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎮 Emoji Converter</h1>
+            <p>Converta emojis para códigos hexadecimais para usar no HaxBall DreamTeam</p>
+        </div>
+
+        <div class="form-group">
+            <label for="emojiInput">Cole ou digite o emoji aqui:</label>
+            <input type="text" id="emojiInput" class="emoji-input" placeholder="🎮">
+        </div>
+
+        <button class="btn" onclick="convertEmoji()">🔄 Converter Emoji</button>
+
+        <div id="result" class="result" style="display: none;">
+            <h3>✅ Código Gerado:</h3>
+            <div id="codeDisplay" class="code-display"></div>
+            <button class="copy-btn" onclick="copyCode()">📋 Copiar Código</button>
+            <button class="copy-btn" onclick="saveCode()" style="background: #667eea;">💾 Salvar no Banco</button>
+        </div>
+
+        <div id="message"></div>
+
+        <div class="examples">
+            <h4>📝 Exemplos de Conversão:</h4>
+            <div class="example-item">
+                <span class="example-emoji">⚽</span>
+                <span>→</span>
+                <span class="example-code">26BD</span>
+            </div>
+            <div class="example-item">
+                <span class="example-emoji">🎯</span>
+                <span>→</span>
+                <span class="example-code">1F3AF</span>
+            </div>
+            <div class="example-item">
+                <span class="example-emoji">🥅</span>
+                <span>→</span>
+                <span class="example-code">1F945</span>
+            </div>
+            <div class="example-item">
+                <span class="example-emoji">👀</span>
+                <span>→</span>
+                <span class="example-code">1F440</span>
+            </div>
+        </div>
+
+        <div id="savedHistory" class="saved-history">
+            <h4>💾 Histórico de Conversões Salvas:</h4>
+            <div id="historyList">
+                <p style="color: #666; font-style: italic;">Nenhuma conversão salva ainda...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentCode = '';
+        let currentEmoji = '';
+        let savedConversions = JSON.parse(localStorage.getItem('emojiConversions') || '[]');
+
+        function convertEmoji() {
+            const emoji = document.getElementById('emojiInput').value.trim();
+            
+            if (!emoji) {
+                showMessage('Por favor, digite um emoji!', 'danger');
+                return;
+            }
+
+            try {
+                // Converter emoji para hex
+                const code = emojiToHex(emoji);
+                
+                currentEmoji = emoji;
+                currentCode = code;
+                
+                // Mostrar resultado
+                document.getElementById('codeDisplay').textContent = code;
+                document.getElementById('result').style.display = 'block';
+                
+                showMessage(`Emoji ${emoji} convertido com sucesso!`, 'success');
+                
+            } catch (error) {
+                showMessage('Erro ao converter emoji: ' + error.message, 'danger');
+            }
+        }
+
+        function emojiToHex(emoji) {
+            // Converter emoji para array de code points
+            const codePoints = Array.from(emoji).map(char => {
+                const codePoint = char.codePointAt(0);
+                return codePoint.toString(16).toUpperCase().padStart(4, '0');
+            });
+            
+            // Retornar código limpo (sem prefixos)
+            return codePoints.join('');
+        }
+
+        function copyCode() {
+            if (!currentCode) {
+                showMessage('Nenhum código para copiar!', 'danger');
+                return;
+            }
+
+            navigator.clipboard.writeText(currentCode).then(() => {
+                showMessage('Código copiado para a área de transferência!', 'success');
+            }).catch(() => {
+                // Fallback para navegadores mais antigos
+                const textArea = document.createElement('textarea');
+                textArea.value = currentCode;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showMessage('Código copiado para a área de transferência!', 'success');
+            });
+        }
+
+        async function saveCode() {
+            if (!currentEmoji || !currentCode) {
+                showMessage('Nenhum código para salvar!', 'danger');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/emoji-converter', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        emoji: currentEmoji
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showMessage('Código salvo no banco de dados!', 'success');
+                    
+                    // Salvar no localStorage também para histórico local
+                    const conversion = {
+                        emoji: currentEmoji,
+                        code: currentCode,
+                        timestamp: new Date().toLocaleString()
+                    };
+                    
+                    savedConversions.unshift(conversion);
+                    savedConversions = savedConversions.slice(0, 10); // Manter apenas os últimos 10
+                    localStorage.setItem('emojiConversions', JSON.stringify(savedConversions));
+                    
+                    updateHistoryDisplay();
+                } else {
+                    showMessage('Erro ao salvar: ' + data.message, 'danger');
+                }
+            } catch (error) {
+                showMessage('Erro de conexão. Salvando apenas localmente...', 'danger');
+                
+                // Salvar apenas localmente se não conseguir salvar no banco
+                const conversion = {
+                    emoji: currentEmoji,
+                    code: currentCode,
+                    timestamp: new Date().toLocaleString()
+                };
+                
+                savedConversions.unshift(conversion);
+                savedConversions = savedConversions.slice(0, 10);
+                localStorage.setItem('emojiConversions', JSON.stringify(savedConversions));
+                
+                updateHistoryDisplay();
+            }
+        }
+
+        function updateHistoryDisplay() {
+            const historyList = document.getElementById('historyList');
+            
+            if (savedConversions.length === 0) {
+                historyList.innerHTML = '<p style="color: #666; font-style: italic;">Nenhuma conversão salva ainda...</p>';
+                return;
+            }
+
+            historyList.innerHTML = savedConversions.map(conv => `
+                <div class="history-item">
+                    <span style="font-size: 20px;">${conv.emoji}</span>
+                    <span style="font-family: 'Courier New', monospace; font-weight: bold;">${conv.code}</span>
+                    <span style="font-size: 12px; color: #666;">${conv.timestamp}</span>
+                    <button class="copy-btn" style="padding: 5px 10px; font-size: 12px;" onclick="copySpecificCode('${conv.code}')">📋</button>
+                </div>
+            `).join('');
+        }
+
+        function copySpecificCode(code) {
+            navigator.clipboard.writeText(code).then(() => {
+                showMessage(`Código ${code} copiado!`, 'success');
+            }).catch(() => {
+                const textArea = document.createElement('textarea');
+                textArea.value = code;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showMessage(`Código ${code} copiado!`, 'success');
+            });
+        }
+
+        function showMessage(message, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+            setTimeout(() => {
+                messageDiv.innerHTML = '';
+            }, 4000);
+        }
+
+        // Auto-converter quando colar ou digitar
+        document.getElementById('emojiInput').addEventListener('input', function() {
+            // Auto-converter se for um emoji único
+            const value = this.value.trim();
+            if (value.length <= 4 && value.length > 0) {
+                // Delay pequeno para melhor UX
+                setTimeout(() => {
+                    if (this.value.trim() === value) {
+                        convertEmoji();
+                    }
+                }, 500);
+            }
+        });
+
+        // Enter para converter
+        document.getElementById('emojiInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                convertEmoji();
+            }
+        });
+
+        // Carregar histórico na inicialização
+        updateHistoryDisplay();
+    </script>
+</body>
+</html>

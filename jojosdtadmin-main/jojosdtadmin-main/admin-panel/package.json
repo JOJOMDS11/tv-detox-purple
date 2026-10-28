@@ -1,0 +1,22 @@
+{
+    "name": "haxball-admin-panel",
+    "version": "1.0.0",
+    "description": "Painel administrativo para HaxBall DreamTeam Bot",
+    "main": "server.js",
+    "scripts": {
+        "dev": "node server.js",
+        "start": "node server.js",
+        "vercel": "vercel dev",
+        "build": "echo 'Build complete'",
+        "test-db": "node test-db.js"
+    },
+    "dependencies": {
+        "cors": "^2.8.5",
+        "dotenv": "^16.6.1",
+        "express": "^4.18.2",
+        "pg": "^8.16.3"
+    },
+    "engines": {
+        "node": "22.x"
+    }
+}

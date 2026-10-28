@@ -1,0 +1,1516 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎮 HaxBall DreamTeam - Admin Panel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .admin-panel {
+            display: none;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 16px;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            font-weight: bold;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.3s;
+            margin-right: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+            color: white;
+        }
+
+        .table-container {
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .status {
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎮 HaxBall DreamTeam</h1>
+            <p>Painel Administrativo</p>
+        </div>
+
+        <!-- Login -->
+        <div class="login-container" id="loginContainer">
+            <h2 style="text-align: center; margin-bottom: 30px;">🔐 Login Administrativo</h2>
+            <div class="form-group">
+                <label for="adminPassword">Senha:</label>
+                <input type="password" id="adminPassword" placeholder="Digite a senha de administrador">
+            </div>
+            <button class="btn" onclick="login()" style="width: 100%;">Entrar</button>
+            <div class="status" id="loginStatus"></div>
+        </div>
+
+        <!-- Admin Panel -->
+        <div class="admin-panel" id="adminPanel">
+            <!-- Estatísticas -->
+            <div class="stats" id="statsContainer">
+                <!-- Carregado via JavaScript -->
+            </div>
+
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab active" onclick="showTab('teams')">👥 Times</button>
+                <button class="tab" onclick="showTab('players')">🎴 Jogadores</button>
+                <button class="tab" onclick="showTab('templates')">⚙️ Templates</button>
+                <button class="tab" onclick="showTab('coins')">💰 Moedas</button>
+                <button class="tab" onclick="showTab('tournaments')">🏆 Torneios</button>
+            </div>
+
+            <!-- Status Messages -->
+            <div class="status" id="statusMessage"></div>
+
+            <!-- Tab: Times -->
+            <div class="tab-content active" id="teams">
+                <h3>👥 Gerenciar Times</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nome do Time</th>
+                                <th>Discord ID</th>
+                                <th>Usuário</th>
+                                <th>Vitórias</th>
+                                <th>Derrotas</th>
+                                <th>Criado em</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="teamsTable">
+                            <!-- Carregado via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tab: Jogadores -->
+            <div class="tab-content" id="players">
+                <h3>🎴 Gerenciar Cartas dos Jogadores</h3>
+
+                <!-- Buscar por Time -->
+                <div class="card">
+                    <h4>🔍 Buscar Jogador por Nome do Time</h4>
+                    <div style="display: grid; grid-template-columns: 1fr auto; gap: 15px; align-items: end;">
+                        <div class="form-group">
+                            <label for="teamSearchName">Nome do Time:</label>
+                            <input type="text" id="teamSearchName" placeholder="Ex: Real Madrid">
+                        </div>
+                        <button class="btn" onclick="searchPlayerByTeam()">🔍 Buscar</button>
+                    </div>
+
+                    <!-- Lista de Todos os Times -->
+                    <div style="margin-top: 15px;">
+                        <button class="btn btn-secondary" onclick="loadAllTeams()">📋 Ver Todos os Times</button>
+                    </div>
+
+                    <div id="teamSearchResult"></div>
+                    <div id="allTeamsList"></div>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Discord ID</th>
+                                <th>Usuário</th>
+                                <th>Total Cartas</th>
+                                <th>Prime</th>
+                                <th>GOAT</th>
+                                <th>Médio</th>
+                                <th>Bagre</th>
+                                <th>Purple Coins</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="playersTable">
+                            <!-- Carregado via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tab: Templates -->
+            <div class="tab-content" id="templates">
+                <h3>⚙️ Gerenciar Templates de Jogadores</h3>
+
+                <!-- Criar Template -->
+                <div class="card">
+                    <h4>➕ Criar Novo Jogador</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 15px; align-items: end;">
+                        <div class="form-group">
+                            <label for="templateName">Nome:</label>
+                            <input type="text" id="templateName" placeholder="Ex: Lionel Messi">
+                        </div>
+                        <div class="form-group">
+                            <label for="templatePosition">Posição:</label>
+                            <select id="templatePosition">
+                                <option value="GK">GK - Goleiro</option>
+                                <option value="VL">VL - Volante</option>
+                                <option value="PV">PV - Pivô</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="templateAvatar">Avatar (Emoji ou Texto):</label>
+                            <input type="text" id="templateAvatar" placeholder="Ex: ⚽ ou Messi" maxlength="10">
+                        </div>
+                        <button class="btn" onclick="createTemplate()">Criar</button>
+                    </div>
+                </div>
+
+                <!-- Lista de Templates -->
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nome</th>
+                                <th>Posição</th>
+                                <th>Avatar</th>
+                                <th>Criado em</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="templatesTable">
+                            <!-- Carregado via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tab: Torneios -->
+            <div class="tab-content" id="tournaments">
+                <h3>🏆 Gerenciar Torneios</h3>
+
+                <!-- Criar Torneio -->
+                <div class="card">
+                    <h4>➕ Criar Novo Torneio</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                        <div class="form-group">
+                            <label for="tournamentName">Nome do Torneio:</label>
+                            <input type="text" id="tournamentName" placeholder="Copa HaxBall 2025">
+                        </div>
+                        <div class="form-group">
+                            <label for="tournamentDate">Data:</label>
+                            <input type="date" id="tournamentDate">
+                        </div>
+                        <div class="form-group">
+                            <label for="tournamentTime">Horário:</label>
+                            <input type="time" id="tournamentTime">
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                        <div class="form-group">
+                            <label for="tournamentFormat">Formato:</label>
+                            <select id="tournamentFormat">
+                                <option value="Mata-mata">Mata-mata</option>
+                                <option value="Pontos Corridos">Pontos Corridos</option>
+                                <option value="Grupos + Mata-mata">Grupos + Mata-mata</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="tournamentMaxPlayers">Máximo de Times:</label>
+                            <select id="tournamentMaxPlayers">
+                                <option value="8">8 Times</option>
+                                <option value="16">16 Times</option>
+                                <option value="32">32 Times</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 15px; align-items: end;">
+                        <div class="form-group">
+                            <label for="tournamentPrize1st">1º Lugar (Coins):</label>
+                            <input type="number" id="tournamentPrize1st" placeholder="1000">
+                        </div>
+                        <div class="form-group">
+                            <label for="tournamentPrize2nd">2º Lugar (Coins):</label>
+                            <input type="number" id="tournamentPrize2nd" placeholder="500">
+                        </div>
+                        <div class="form-group">
+                            <label for="tournamentPrize3rd">3º Lugar (Coins):</label>
+                            <input type="number" id="tournamentPrize3rd" placeholder="250">
+                        </div>
+                        <button class="btn" onclick="createTournament()">🏆 Criar</button>
+                    </div>
+                </div>
+
+                <!-- Lista de Torneios -->
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nome</th>
+                                <th>Data</th>
+                                <th>Horário</th>
+                                <th>Formato</th>
+                                <th>Max Times</th>
+                                <th>Inscritos</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tournamentsTable">
+                            <!-- Carregado via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="tab-content" id="coins">
+                <h3>💰 Gerenciar Purple Coins</h3>
+
+                <!-- Gerar Códigos Purple Coins -->
+                <div class="card">
+                    <h4>🎫 Gerar Código Purple Coins</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 15px; align-items: end;">
+                        <div class="form-group">
+                            <label for="codeAmount">Valor do Código:</label>
+                            <input type="number" id="codeAmount" placeholder="500" min="1" max="10000">
+                        </div>
+                        <div class="form-group">
+                            <label for="codeExpires">Expira em (horas):</label>
+                            <input type="number" id="codeExpires" placeholder="24" min="1" max="8760" value="24">
+                        </div>
+                        <div class="form-group">
+                            <label for="codeUses">Máximo de Usos:</label>
+                            <input type="number" id="codeUses" placeholder="1" min="1" max="1000" value="1">
+                        </div>
+                        <button class="btn" onclick="generateCode()">🎫 Gerar Código</button>
+                    </div>
+                    <div id="generatedCodeResult"></div>
+                </div>
+
+                <!-- Verificar Código -->
+                <div class="card">
+                    <h4>🔍 Verificar Código</h4>
+                    <div style="display: grid; grid-template-columns: 1fr auto; gap: 15px; align-items: end;">
+                        <div class="form-group">
+                            <label for="checkCodeInput">Código:</label>
+                            <input type="text" id="checkCodeInput" placeholder="PC500_XXXXXXXX">
+                        </div>
+                        <button class="btn btn-secondary" onclick="checkCode()">Verificar</button>
+                    </div>
+                    <div id="codeCheckResult"></div>
+                </div>
+
+                <!-- Adicionar Moedas -->
+                <div class="card">
+                    <h4>➕ Adicionar Purple Coins</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 15px; align-items: end;">
+                        <div class="form-group">
+                            <label for="coinDiscordId">Discord ID do Usuário:</label>
+                            <input type="text" id="coinDiscordId" placeholder="123456789012345678">
+                        </div>
+                        <div class="form-group">
+                            <label for="coinAmount">Quantidade:</label>
+                            <input type="number" id="coinAmount" placeholder="100" min="1">
+                        </div>
+                        <button class="btn" onclick="addCoins()">Adicionar</button>
+                    </div>
+                </div>
+
+                <!-- Buscar Usuário -->
+                <div class="card">
+                    <h4>🔍 Buscar Usuário</h4>
+                    <div style="display: grid; grid-template-columns: 1fr auto; gap: 15px; align-items: end;">
+                        <div class="form-group">
+                            <label for="searchUserId">Discord ID:</label>
+                            <input type="text" id="searchUserId" placeholder="Digite o Discord ID">
+                        </div>
+                        <button class="btn" onclick="searchUser()">Buscar</button>
+                    </div>
+                    <div id="userSearchResult"></div>
+                </div>
+            </div>
+
+            <!-- Tab: Torneios -->
+            <div class="tab-content" id="tournaments">
+                <h3>🏆 Gerenciar Torneios</h3>
+
+                <!-- Criar Torneio -->
+                <div class="form-container">
+                    <h4>➕ Criar Novo Torneio</h4>
+                    <form id="createTournamentForm">
+                        <div class="form-row">
+                            <input type="text" id="tournamentName" placeholder="Nome do Torneio" required>
+                            <input type="date" id="tournamentDate" required>
+                            <input type="time" id="tournamentTime" required>
+                        </div>
+                        <div class="form-row">
+                            <select id="tournamentFormat" required>
+                                <option value="">Formato</option>
+                                <option value="Mata-mata">Mata-mata</option>
+                                <option value="Pontos Corridos">Pontos Corridos</option>
+                                <option value="Grupos + Mata-mata">Grupos + Mata-mata</option>
+                            </select>
+                            <select id="tournamentMaxPlayers" required>
+                                <option value="">Máximo de Times</option>
+                                <option value="8">8 Times</option>
+                                <option value="16">16 Times</option>
+                                <option value="32">32 Times</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <input type="text" id="tournamentPrize1st"
+                                placeholder="Premiação 1º Lugar (ex: 1000 Purple Coins)" required>
+                            <input type="text" id="tournamentPrize2nd"
+                                placeholder="Premiação 2º Lugar (ex: 500 Purple Coins)" required>
+                            <input type="text" id="tournamentPrize3rd"
+                                placeholder="Premiação 3º Lugar (ex: 250 Purple Coins)" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">🏆 Criar Torneio</button>
+                    </form>
+                </div>
+
+                <!-- Lista de Torneios -->
+                <div class="table-container">
+                    <table id="tournamentsTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nome</th>
+                                <th>Data</th>
+                                <th>Horário</th>
+                                <th>Formato</th>
+                                <th>Vagas</th>
+                                <th>Status</th>
+                                <th>Inscritos</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tournamentsTableBody">
+                            <!-- Preenchido via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Logout -->
+            <div style="text-align: center; margin-top: 30px;">
+                <button class="btn btn-danger" onclick="logout()">🚪 Sair</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isLoggedIn = false;
+
+        // Login
+        function login() {
+            const password = document.getElementById('adminPassword').value;
+
+            fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        isLoggedIn = true;
+                        document.getElementById('loginContainer').style.display = 'none';
+                        document.getElementById('adminPanel').style.display = 'block';
+                        loadData();
+                    } else {
+                        showLoginStatus('Senha incorreta!', 'error');
+                    }
+                })
+                .catch(error => {
+                    showLoginStatus('Erro de conexão!', 'error');
+                });
+        }
+
+        // Logout
+        function logout() {
+            isLoggedIn = false;
+            document.getElementById('loginContainer').style.display = 'block';
+            document.getElementById('adminPanel').style.display = 'none';
+            document.getElementById('adminPassword').value = '';
+        }
+
+        // Show Login Status
+        function showLoginStatus(message, type) {
+            const status = document.getElementById('loginStatus');
+            status.textContent = message;
+            status.className = `status ${type}`;
+            status.style.display = 'block';
+            setTimeout(() => status.style.display = 'none', 3000);
+        }
+
+        // Show Status Message
+        function showStatus(message, type = 'success') {
+            const status = document.getElementById('statusMessage');
+            status.textContent = message;
+            status.className = `status ${type}`;
+            status.style.display = 'block';
+            setTimeout(() => status.style.display = 'none', 3000);
+        }
+
+        // Tab Management
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            // Load specific data
+            if (tabName === 'teams') loadTeams();
+            else if (tabName === 'players') loadPlayers();
+            else if (tabName === 'templates') loadTemplates();
+            else if (tabName === 'tournaments') loadTournaments();
+        }
+
+        // Load all data
+        function loadData() {
+            loadStats();
+            loadTeams();
+            loadPlayers();
+            loadTemplates();
+        }
+
+        // Load Statistics
+        function loadStats() {
+            fetch('/api/stats')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.data) {
+                        document.getElementById('statsContainer').innerHTML = `
+                        <div class="stat-card">
+                            <div class="stat-number">${data.data.totalPlayers || 0}</div>
+                            <div class="stat-label">👥 Total Usuários</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">${data.data.totalTeams || 0}</div>
+                            <div class="stat-label">🏆 Times Criados</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">${data.data.totalCards || 0}</div>
+                            <div class="stat-label">🎴 Total Cartas</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">${data.data.totalTemplates || 0}</div>
+                            <div class="stat-label">⚙️ Templates</div>
+                        </div>
+                    `;
+                    } else {
+                        console.error('Erro ao carregar stats:', data);
+                        document.getElementById('statsContainer').innerHTML = `
+                        <div class="stat-card">
+                            <div class="stat-number">0</div>
+                            <div class="stat-label">👥 Total Usuários</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">0</div>
+                            <div class="stat-label">🏆 Times Criados</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">0</div>
+                            <div class="stat-label">🎴 Total Cartas</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">0</div>
+                            <div class="stat-label">⚙️ Templates</div>
+                        </div>
+                    `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro na requisição de stats:', error);
+                    document.getElementById('statsContainer').innerHTML = `
+                    <div class="stat-card">
+                        <div class="stat-number">Erro</div>
+                        <div class="stat-label">👥 Total Usuários</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">Erro</div>
+                        <div class="stat-label">🏆 Times Criados</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">Erro</div>
+                        <div class="stat-label">🎴 Total Cartas</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">Erro</div>
+                        <div class="stat-label">⚙️ Templates</div>
+                    </div>
+                `;
+                });
+        }
+
+        // Load Teams
+        function loadTeams() {
+            fetch('/api/teams')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.data) {
+                        const tbody = document.getElementById('teamsTable');
+                        tbody.innerHTML = data.data.map(team => `
+                        <tr>
+                            <td>${team.id}</td>
+                            <td>${team.name}</td>
+                            <td><code>${team.discord_id || team.owner_discord_id || ''}</code></td>
+                            <td>${team.username || '-'}</td>
+                            <td>${team.wins}</td>
+                            <td>${team.losses}</td>
+                            <td>${team.created_at ? new Date(team.created_at).toLocaleDateString('pt-BR') : '-'}</td>
+                            <td>
+                                <button class="btn btn-danger" onclick="deleteTeam('${team.id}')">🗑️</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                    } else {
+                        document.getElementById('teamsTable').innerHTML = '<tr><td colspan="8">Nenhum time encontrado</td></tr>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar times:', error);
+                    document.getElementById('teamsTable').innerHTML = '<tr><td colspan="8">Erro ao carregar times</td></tr>';
+                });
+        }
+
+        // Load Players
+        function loadPlayers() {
+            fetch('/api/players')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.data) {
+                        const tbody = document.getElementById('playersTable');
+                        tbody.innerHTML = data.data.map(player => `
+                        <tr>
+                            <td><code>${player.discord_id}</code></td>
+                            <td>${player.name}</td>
+                            <td>0</td>
+                            <td>0</td>
+                            <td>0</td>
+                            <td>0</td>
+                            <td>0</td>
+                            <td>💰 ${player.purple_coins}</td>
+                            <td>
+                                <button class="btn" onclick="addCoinsToUser('${player.discord_id}')">💰</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                    } else {
+                        document.getElementById('playersTable').innerHTML = '<tr><td colspan="9">Nenhum jogador encontrado</td></tr>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar jogadores:', error);
+                    document.getElementById('playersTable').innerHTML = '<tr><td colspan="9">Erro ao carregar jogadores</td></tr>';
+                });
+        }
+
+        // Load Templates
+        function loadTemplates() {
+            fetch('/api/templates')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.data) {
+                        const tbody = document.getElementById('templatesTable');
+                        tbody.innerHTML = data.data.map(template => `
+                        <tr>
+                            <td>${template.id}</td>
+                            <td>${template.name}</td>
+                            <td>${template.position || '-'}</td>
+                            <td>${template.avatar || '-'}</td>
+                            <td>${template.created_at ? new Date(template.created_at).toLocaleDateString('pt-BR') : '-'}</td>
+                            <td>
+                                <button class="btn btn-danger" onclick="deleteTemplate('${template.id}')">🗑️</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                    } else {
+                        document.getElementById('templatesTable').innerHTML = '<tr><td colspan="6">Nenhum template encontrado</td></tr>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar templates:', error);
+                    document.getElementById('templatesTable').innerHTML = '<tr><td colspan="6">Erro ao carregar templates</td></tr>';
+                });
+        }
+
+        // Create Template
+        function createTemplate() {
+            const name = document.getElementById('templateName').value;
+            const position = document.getElementById('templatePosition').value;
+            const avatar = document.getElementById('templateAvatar').value;
+
+            if (!name || !avatar) {
+                showStatus('Preencha nome e avatar!', 'error');
+                return;
+            }
+
+            if (avatar.length > 10) {
+                showStatus('Avatar deve ter no máximo 10 caracteres!', 'error');
+                return;
+            }
+
+            fetch('/api/templates', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, position, avatar })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showStatus('Jogador criado com sucesso!');
+                        document.getElementById('templateName').value = '';
+                        document.getElementById('templateAvatar').value = '';
+                        loadTemplates();
+                        loadStats();
+                    } else {
+                        showStatus(data.message || 'Erro ao criar jogador', 'error');
+                    }
+                })
+                .catch(error => {
+                    showStatus('Erro na conexão: ' + error.message, 'error');
+                });
+        }
+
+        // Search Player by Team Name
+        function searchPlayerByTeam() {
+            const teamName = document.getElementById('teamSearchName').value;
+
+            if (!teamName) {
+                showStatus('Digite o nome do time!', 'error');
+                return;
+            }
+
+            fetch(`/api/teams/search?name=${encodeURIComponent(teamName)}`)
+                .then(response => response.json())
+                .then(data => {
+                    const resultDiv = document.getElementById('teamSearchResult');
+                    if (data.success && data.data) {
+                        const team = data.data;
+                        resultDiv.innerHTML = `
+                        <div class="card" style="margin-top: 15px;">
+                            <h4>🏆 ${team.name}</h4>
+                            <p><strong>Proprietário:</strong> <code>${team.owner_discord_id}</code></p>
+                            <p><strong>Username:</strong> ${team.username || 'N/A'}</p>
+                            <p><strong>Vitórias:</strong> 🏆 ${team.wins}</p>
+                            <p><strong>Derrotas:</strong> ❌ ${team.losses}</p>
+                            <p><strong>Criado em:</strong> ${new Date(team.created_at).toLocaleDateString('pt-BR')}</p>
+                            <button class="btn" onclick="loadPlayerCards('${team.owner_discord_id}')">📊 Ver Cartas do Jogador</button>
+                        </div>
+                    `;
+                    } else {
+                        resultDiv.innerHTML = `<div class="card" style="margin-top: 15px; background: #f8d7da; border-left-color: #dc3545;"><p>❌ Time não encontrado</p></div>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro na busca:', error);
+                    document.getElementById('teamSearchResult').innerHTML = `<div class="card" style="margin-top: 15px; background: #f8d7da; border-left-color: #dc3545;"><p>❌ Erro na busca</p></div>`;
+                });
+        }
+
+        // Load Player Cards
+        function loadPlayerCards(discordId) {
+            fetch(`/api/user/${discordId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const resultDiv = document.getElementById('teamSearchResult');
+                    if (data.success) {
+                        resultDiv.innerHTML += `
+                        <div class="card" style="margin-top: 10px; background: #d4edda; border-left-color: #28a745;">
+                            <h4>🎴 Cartas do Jogador: ${data.user.name || data.user.username || 'Usuário Desconhecido'}</h4>
+                            <p><strong>Discord ID:</strong> <code>${data.user.discord_id}</code></p>
+                            <p><strong>Purple Coins:</strong> 💰 ${data.user.purple_coins}</p>
+                            <p><strong>Total de Cartas:</strong> 🎴 ${data.cards.total}</p>
+                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px;">
+                                <div style="text-align: center; padding: 10px; background: #fff; border-radius: 8px;">
+                                    <strong>Prime</strong><br>💎 ${data.cards.prime}
+                                </div>
+                                <div style="text-align: center; padding: 10px; background: #fff; border-radius: 8px;">
+                                    <strong>GOAT</strong><br>🐐 ${data.cards.goat}
+                                </div>
+                                <div style="text-align: center; padding: 10px; background: #fff; border-radius: 8px;">
+                                    <strong>Médio</strong><br>📊 ${data.cards.medio}
+                                </div>
+                                <div style="text-align: center; padding: 10px; background: #fff; border-radius: 8px;">
+                                    <strong>Bagre</strong><br>🐟 ${data.cards.bagre}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    } else {
+                        resultDiv.innerHTML += `<div class="card" style="margin-top: 10px; background: #f8d7da; border-left-color: #dc3545;"><p>❌ Erro ao carregar cartas do jogador</p></div>`;
+                    }
+                });
+        }
+
+        // Load All Teams
+        function loadAllTeams() {
+            fetch('/api/teams')
+                .then(response => response.json())
+                .then(data => {
+                    const resultDiv = document.getElementById('allTeamsList');
+                    if (data.success && data.data.length > 0) {
+                        let teamsHtml = `
+                        <div class="card" style="margin-top: 15px;">
+                            <h4>📋 Todos os Times (${data.data.length})</h4>
+                            <div style="display: grid; gap: 10px; margin-top: 10px;">
+                        `;
+
+                        data.data.forEach(team => {
+                            teamsHtml += `
+                                <div style="background: #f8f9fa; padding: 10px; border-radius: 8px; border-left: 4px solid #007bff;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <div>
+                                            <strong>🏆 ${team.name}</strong><br>
+                                            <small>👤 ${team.username || 'N/A'} (${team.owner_discord_id})</small><br>
+                                            <small>📊 ${team.wins}V - ${team.losses}D - Criado: ${new Date(team.created_at).toLocaleDateString('pt-BR')}</small>
+                                        </div>
+                                        <button class="btn" onclick="loadPlayerCards('${team.owner_discord_id}')" style="margin: 0;">
+                                            📊 Ver Cartas
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                        });
+
+                        teamsHtml += '</div></div>';
+                        resultDiv.innerHTML = teamsHtml;
+                    } else {
+                        resultDiv.innerHTML = `<div class="card" style="margin-top: 15px; background: #f8d7da; border-left-color: #dc3545;"><p>❌ Nenhum time encontrado</p></div>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar times:', error);
+                    document.getElementById('allTeamsList').innerHTML = `<div class="card" style="margin-top: 15px; background: #f8d7da; border-left-color: #dc3545;"><p>❌ Erro ao carregar times</p></div>`;
+                });
+        }
+
+        // Delete Template
+        function deleteTemplate(id) {
+            if (!confirm('Tem certeza que deseja excluir este jogador?')) return;
+
+            fetch(`/api/templates/${id}`, { method: 'DELETE' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showStatus('Jogador excluído com sucesso!');
+                        loadTemplates();
+                        loadStats();
+                    } else {
+                        showStatus(data.error, 'error');
+                    }
+                });
+        }
+
+        // Delete Team
+        function deleteTeam(id) {
+            if (!confirm('Tem certeza que deseja excluir este time?')) return;
+
+            fetch(`/api/teams/${id}`, { method: 'DELETE' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showStatus('Time excluído com sucesso!');
+                        loadTeams();
+                        loadStats();
+                    } else {
+                        showStatus(data.error, 'error');
+                    }
+                });
+        }
+
+        // Add Coins
+        function generateCode() {
+            const amount = parseInt(document.getElementById('codeAmount').value);
+            const expires = parseInt(document.getElementById('codeExpires').value);
+            const maxUses = parseInt(document.getElementById('codeUses').value);
+
+            if (!amount || !expires || !maxUses) {
+                showStatus('Preencha todos os campos para gerar o código!', 'error');
+                return;
+            }
+
+            if (amount < 1 || amount > 10000) {
+                showStatus('Valor deve estar entre 1 e 10,000 Purple Coins!', 'error');
+                return;
+            }
+
+            showStatus('Gerando código...', 'info');
+
+            fetch('/api/codes/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    amount: amount,
+                    expiresInHours: expires,
+                    maxUses: maxUses
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const resultDiv = document.getElementById('generatedCodeResult');
+                    resultDiv.innerHTML = `
+                        <div style="background: #e8f5e8; border: 2px solid #4caf50; padding: 15px; border-radius: 10px; margin-top: 15px;">
+                            <h4 style="color: #2e7d32; margin-bottom: 10px;">🎉 Código Gerado com Sucesso!</h4>
+                            <div style="background: #fff; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 18px; font-weight: bold; color: #1976d2; text-align: center; margin: 10px 0;">
+                                ${data.code}
+                            </div>
+                            <p><strong>💰 Valor:</strong> ${data.amount} Purple Coins</p>
+                            <p><strong>📊 Usos:</strong> 0/${data.maxUses}</p>
+                            <p><strong>⏰ Expira em:</strong> ${new Date(data.expiresAt).toLocaleString('pt-BR')}</p>
+                            <button class="btn btn-secondary" onclick="copyToClipboard('${data.code}')" style="margin-top: 10px;">📋 Copiar Código</button>
+                        </div>
+                    `;
+                    
+                    // Limpar campos
+                    document.getElementById('codeAmount').value = '';
+                    document.getElementById('codeExpires').value = '24';
+                    document.getElementById('codeUses').value = '1';
+                    
+                    showStatus('Código gerado com sucesso!');
+                } else {
+                    showStatus(data.error || 'Erro ao gerar código', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                showStatus('Erro ao conectar com o servidor', 'error');
+            });
+        }
+
+        function checkCode() {
+            const code = document.getElementById('checkCodeInput').value.trim().toUpperCase();
+
+            if (!code) {
+                showStatus('Digite um código para verificar!', 'error');
+                return;
+            }
+
+            showStatus('Verificando código...', 'info');
+
+            fetch(`/api/codes/check/${code}`)
+            .then(response => response.json())
+            .then(data => {
+                const resultDiv = document.getElementById('codeCheckResult');
+                
+                if (data.success && data.code) {
+                    const codeInfo = data.code;
+                    const isExpired = new Date() > new Date(codeInfo.expires_at);
+                    const isUsedUp = codeInfo.remaining_uses <= 0;
+                    
+                    let statusColor = '#4caf50';
+                    let statusText = '✅ Válido';
+                    
+                    if (isExpired) {
+                        statusColor = '#f44336';
+                        statusText = '⏰ Expirado';
+                    } else if (isUsedUp) {
+                        statusColor = '#ff9800';
+                        statusText = '🚫 Esgotado';
+                    }
+                    
+                    resultDiv.innerHTML = `
+                        <div style="background: #f5f5f5; border: 2px solid ${statusColor}; padding: 15px; border-radius: 10px; margin-top: 15px;">
+                            <h4 style="color: ${statusColor}; margin-bottom: 10px;">${statusText}</h4>
+                            <div style="background: #fff; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 16px; font-weight: bold; color: #1976d2; margin: 10px 0;">
+                                ${codeInfo.code}
+                            </div>
+                            <p><strong>💰 Valor:</strong> ${codeInfo.amount || codeInfo.purple_coins_value} Purple Coins</p>
+                            <p><strong>📊 Usos:</strong> ${(codeInfo.max_uses - codeInfo.remaining_uses) || 0}/${codeInfo.max_uses || 1}</p>
+                            <p><strong>⏰ Criado em:</strong> ${new Date(codeInfo.created_at).toLocaleString('pt-BR')}</p>
+                            <p><strong>🗓️ Expira em:</strong> ${new Date(codeInfo.expires_at).toLocaleString('pt-BR')}</p>
+                            ${codeInfo.description ? `<p><strong>📝 Descrição:</strong> ${codeInfo.description}</p>` : ''}
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div style="background: #ffeaa7; border: 2px solid #fdcb6e; padding: 15px; border-radius: 10px; margin-top: 15px;">
+                            <h4 style="color: #e17055; margin-bottom: 10px;">❌ Código Não Encontrado</h4>
+                            <p>O código <strong>${code}</strong> não existe no sistema.</p>
+                        </div>
+                    `;
+                }
+                
+                document.getElementById('checkCodeInput').value = '';
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                showStatus('Erro ao verificar código', 'error');
+            });
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showStatus('Código copiado para a área de transferência!');
+            }).catch(err => {
+                console.error('Erro ao copiar:', err);
+                showStatus('Erro ao copiar código', 'error');
+            });
+        }
+
+        function addCoins() {
+            const discordId = document.getElementById('coinDiscordId').value;
+            const amount = parseInt(document.getElementById('coinAmount').value);
+
+            if (!discordId || !amount) {
+                showStatus('Preencha Discord ID e quantidade!', 'error');
+                return;
+            }
+
+            fetch('/api/coins', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ discordId, amount })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showStatus(`${amount} Purple Coins adicionadas com sucesso!`);
+                        document.getElementById('coinDiscordId').value = '';
+                        document.getElementById('coinAmount').value = '';
+                        loadPlayers();
+                    } else {
+                        showStatus(data.error, 'error');
+                    }
+                });
+        }
+
+        // Search User
+        function searchUser() {
+            const discordId = document.getElementById('searchUserId').value;
+
+            if (!discordId) {
+                showStatus('Digite um Discord ID!', 'error');
+                return;
+            }
+
+            fetch(`/api/user/${discordId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const resultDiv = document.getElementById('userSearchResult');
+                    if (data.success) {
+                        resultDiv.innerHTML = `
+                        <div class="card" style="margin-top: 15px;">
+                            <h4>👤 ${data.user.username}</h4>
+                            <p><strong>Discord ID:</strong> <code>${data.user.discord_id}</code></p>
+                            <p><strong>Purple Coins:</strong> 💰 ${data.user.purple_coins}</p>
+                            <p><strong>Total de Cartas:</strong> 🎴 ${data.cards.total}</p>
+                            <p><strong>Prime:</strong> ${data.cards.prime} | <strong>GOAT:</strong> ${data.cards.goat} | <strong>Médio:</strong> ${data.cards.medio} | <strong>Bagre:</strong> ${data.cards.bagre}</p>
+                        </div>
+                    `;
+                    } else {
+                        resultDiv.innerHTML = `<div class="card" style="margin-top: 15px; background: #f8d7da; border-left-color: #dc3545;"><p>❌ Usuário não encontrado</p></div>`;
+                    }
+                });
+        }
+
+        // Add coins to specific user
+        function addCoinsToUser(discordId) {
+            const amount = prompt('Quantas Purple Coins adicionar?');
+            if (!amount || isNaN(amount)) return;
+
+            fetch('/api/coins', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ discordId, amount: parseInt(amount) })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showStatus(`${amount} Purple Coins adicionadas!`);
+                        loadPlayers();
+                    } else {
+                        showStatus(data.error, 'error');
+                    }
+                });
+        }
+
+        // Tournament Functions
+        function loadTournaments() {
+            fetch('/api/tournaments')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.tournaments) {
+                        document.getElementById('tournamentsTableBody').innerHTML = data.tournaments.map(tournament => `
+                        <tr>
+                            <td>${tournament.id}</td>
+                            <td>${tournament.name}</td>
+                            <td>${new Date(tournament.date).toLocaleDateString('pt-BR')}</td>
+                            <td>${tournament.time}</td>
+                            <td>${tournament.format}</td>
+                            <td>${tournament.registered_teams || 0}/${tournament.max_players}</td>
+                            <td><span class="status ${tournament.status}">${tournament.status}</span></td>
+                            <td>
+                                <button class="btn btn-info btn-sm" onclick="viewTournamentRegistrations(${tournament.id})">
+                                    👥 Ver Inscritos
+                                </button>
+                            </td>
+                            <td>
+                                <button class="btn btn-danger btn-sm" onclick="deleteTournament(${tournament.id})">
+                                    🗑️ Deletar
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                    } else {
+                        document.getElementById('tournamentsTableBody').innerHTML = '<tr><td colspan="9">Nenhum torneio encontrado</td></tr>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar torneios:', error);
+                    document.getElementById('tournamentsTableBody').innerHTML = '<tr><td colspan="9">Erro ao carregar torneios</td></tr>';
+                });
+        }
+
+        // Create Tournament
+        document.getElementById('createTournamentForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const tournamentData = {
+                name: document.getElementById('tournamentName').value,
+                date: document.getElementById('tournamentDate').value,
+                time: document.getElementById('tournamentTime').value,
+                format: document.getElementById('tournamentFormat').value,
+                max_players: parseInt(document.getElementById('tournamentMaxPlayers').value),
+                prize_1st: document.getElementById('tournamentPrize1st').value,
+                prize_2nd: document.getElementById('tournamentPrize2nd').value,
+                prize_3rd: document.getElementById('tournamentPrize3rd').value
+            };
+
+            fetch('/api/tournaments', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(tournamentData)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showStatus('Torneio criado com sucesso!', 'success');
+                        document.getElementById('createTournamentForm').reset();
+                        loadTournaments();
+                    } else {
+                        showStatus(data.message || 'Erro ao criar torneio', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao criar torneio:', error);
+                    showStatus('Erro ao criar torneio', 'error');
+                });
+        });
+
+        // Delete Tournament
+        function deleteTournament(id) {
+            if (confirm('Tem certeza que deseja deletar este torneio?')) {
+                fetch(`/api/tournaments/${id}`, {
+                    method: 'DELETE'
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showStatus('Torneio deletado com sucesso!', 'success');
+                            loadTournaments();
+                        } else {
+                            showStatus(data.message || 'Erro ao deletar torneio', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erro ao deletar torneio:', error);
+                        showStatus('Erro ao deletar torneio', 'error');
+                    });
+            }
+        }
+
+        // View Tournament Registrations
+        function viewTournamentRegistrations(tournamentId) {
+            fetch(`/api/tournaments/${tournamentId}/registrations`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        let message = `Inscritos no Torneio:\n\n`;
+                        if (data.registrations && data.registrations.length > 0) {
+                            data.registrations.forEach((reg, index) => {
+                                message += `${index + 1}. ${reg.team_name} (${reg.owner_username || reg.owner_id})\n`;
+                            });
+                        } else {
+                            message += 'Nenhum time inscrito ainda.';
+                        }
+                        alert(message);
+                    } else {
+                        showStatus(data.message || 'Erro ao buscar inscrições', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao buscar inscrições:', error);
+                    showStatus('Erro ao buscar inscrições', 'error');
+                });
+        }
+
+        // Update loadData function
+        function loadData() {
+            loadStats();
+            loadTeams();
+            loadPlayers();
+            loadTemplates();
+            loadTournaments();
+        }
+
+        // Create Tournament
+        function createTournament() {
+            const name = document.getElementById('tournamentName').value;
+            const date = document.getElementById('tournamentDate').value;
+            const time = document.getElementById('tournamentTime').value;
+            const format = document.getElementById('tournamentFormat').value;
+            const maxPlayers = document.getElementById('tournamentMaxPlayers').value;
+            const prize1st = document.getElementById('tournamentPrize1st').value;
+            const prize2nd = document.getElementById('tournamentPrize2nd').value;
+            const prize3rd = document.getElementById('tournamentPrize3rd').value;
+
+            if (!name || !date || !time) {
+                showStatus('Preencha todos os campos obrigatórios!', 'error');
+                return;
+            }
+
+            const tournamentData = {
+                name, date, time, format,
+                max_players: parseInt(maxPlayers),
+                prize_1st: prize1st, prize_2nd: prize2nd, prize_3rd: prize3rd
+            };
+
+            fetch('/api/tournaments', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(tournamentData)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showStatus('Torneio criado com sucesso!');
+                        // Limpar campos
+                        document.getElementById('tournamentName').value = '';
+                        document.getElementById('tournamentDate').value = '';
+                        document.getElementById('tournamentTime').value = '';
+                        document.getElementById('tournamentPrize1st').value = '';
+                        document.getElementById('tournamentPrize2nd').value = '';
+                        document.getElementById('tournamentPrize3rd').value = '';
+                        loadTournaments();
+                    } else {
+                        showStatus(data.message || 'Erro ao criar torneio', 'error');
+                    }
+                })
+                .catch(error => {
+                    showStatus('Erro na conexão: ' + error.message, 'error');
+                });
+        }
+
+        // Load Tournaments
+        function loadTournaments() {
+            fetch('/api/tournaments')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.tournaments) {
+                        const tbody = document.getElementById('tournamentsTable');
+                        tbody.innerHTML = data.tournaments.map(tournament => `
+                        <tr>
+                            <td>${tournament.id}</td>
+                            <td>${tournament.name}</td>
+                            <td>${new Date(tournament.date).toLocaleDateString('pt-BR')}</td>
+                            <td>${tournament.time}</td>
+                            <td>${tournament.format}</td>
+                            <td>${tournament.max_players}</td>
+                            <td>${tournament.registered_teams || 0}/${tournament.max_players}</td>
+                            <td>
+                                <span style="color: ${tournament.status === 'upcoming' ? '#f39c12' : tournament.status === 'active' ? '#27ae60' : '#e74c3c'}">
+                                    ${tournament.status === 'upcoming' ? '🕐 Aguardando' : tournament.status === 'active' ? '🔴 Ativo' : '✅ Finalizado'}
+                                </span>
+                            </td>
+                            <td>
+                                ${tournament.status === 'upcoming' ?
+                                `<button class="btn" onclick="startTournament('${tournament.id}')">🚀 Iniciar</button>` :
+                                ''}
+                                <button class="btn btn-danger" onclick="deleteTournament('${tournament.id}')">🗑️</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                    } else {
+                        document.getElementById('tournamentsTable').innerHTML = '<tr><td colspan="9">Nenhum torneio encontrado</td></tr>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar torneios:', error);
+                    document.getElementById('tournamentsTable').innerHTML = '<tr><td colspan="9">Erro ao carregar torneios</td></tr>';
+                });
+        }
+
+        // Start Tournament
+        function startTournament(id) {
+            if (confirm('Tem certeza que deseja iniciar este torneio?')) {
+                fetch(`/api/tournaments/${id}/start`, {
+                    method: 'POST'
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showStatus('Torneio iniciado com sucesso!');
+                            loadTournaments();
+                        } else {
+                            showStatus(data.message || 'Erro ao iniciar torneio', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        showStatus('Erro na conexão: ' + error.message, 'error');
+                    });
+            }
+        }
+
+        // Delete Tournament
+        function deleteTournament(id) {
+            if (confirm('Tem certeza que deseja deletar este torneio?')) {
+                fetch(`/api/tournaments/${id}`, {
+                    method: 'DELETE'
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showStatus('Torneio deletado com sucesso!');
+                            loadTournaments();
+                        } else {
+                            showStatus(data.message || 'Erro ao deletar torneio', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        showStatus('Erro na conexão: ' + error.message, 'error');
+                    });
+            }
+        }
+
+        // Update showTab function
+        function showTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            document.querySelector(`[onclick="showTab('${tabName}')"]`).classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+
+            if (tabName === 'teams') loadTeams();
+            else if (tabName === 'players') loadPlayers();
+            else if (tabName === 'templates') loadTemplates();
+            else if (tabName === 'tournaments') loadTournaments();
+        }
+
+        // Enter key for login
+        document.getElementById('adminPassword').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                login();
+            }
+        });
+    </script>
+</body>
+
+</html>
